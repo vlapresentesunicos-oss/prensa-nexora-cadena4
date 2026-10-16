@@ -1,0 +1,43 @@
+{
+  "id": "/corresponsal-movil",
+  "name": "Nora Móvil • Periodista de Exteriores",
+  "short_name": "Nora Móvil",
+  "description": "Terminal de exteriores de Prensa NexoraOne • Cadena 4: audio, fotos y testimonios directo al estudio.",
+  "start_url": "/corresponsal-movil",
+  "scope": "/corresponsal-movil",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#030712",
+  "theme_color": "#ea580c",
+  "lang": "es",
+  "categories": [
+    "news",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

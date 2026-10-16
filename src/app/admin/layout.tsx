@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import AdminSidebar from "@/components/Admin/AdminSidebar";
+import InstallAppPrompt from "@/components/InstallAppPrompt";
 import NoraMovilModal from "@/components/Admin/NoraMovilModal";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -209,6 +210,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="text-[10px]">Menú</span>
         </button>
       </nav>
+
+      {/* Cartel de instalación como app (Android: botón Instalar / iPhone: guía de 2 toques) */}
+      <InstallAppPrompt
+        appName="Prensa N1"
+        tagline="Panel de Redacción • Cadena 4"
+        storageKey="prensa_panel"
+      />
 
       {/* Modal QR Nora Periodista de Exteriores */}
       <NoraMovilModal
