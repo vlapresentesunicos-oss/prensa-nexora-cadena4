@@ -6,7 +6,9 @@ import { usePathname } from "next/navigation";
 import { 
   Newspaper, 
   PenTool, 
-  Radio, 
+  Radio,
+  Smartphone,
+  ExternalLink, 
   Sparkles, 
   Film, 
   Inbox, 
@@ -23,9 +25,11 @@ import {
 interface AdminSidebarProps {
   userRole?: string;
   onLogout?: () => void;
+  isMobile?: boolean;
+  onClose?: () => void;
 }
 
-export default function AdminSidebar({ userRole = "Director", onLogout }: AdminSidebarProps) {
+export default function AdminSidebar({ userRole = "Director", onLogout, isMobile = false, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
 
   const [openSections, setOpenSections] = useState({
@@ -45,7 +49,7 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
   };
 
   return (
-    <aside className="w-64 glass-panel m-3 flex flex-col hidden md:flex border border-white/10 shrink-0 h-[calc(100vh-24px)] select-none">
+    <aside className={`w-64 glass-panel flex flex-col border border-white/10 shrink-0 select-none ${isMobile ? "h-full w-full border-none" : "m-3 hidden md:flex h-[calc(100vh-24px)]"}`}>
       {/* Brand Header */}
       <div className="p-5 border-b border-white/10 flex flex-col gap-1">
         <div className="flex items-center gap-2">
@@ -81,7 +85,7 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
           
           {openSections.redaccion && (
             <div className="p-1 space-y-0.5">
-              <Link
+              <Link onClick={onClose}
                 href="/admin"
                 className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${
                   isActive("/admin")
@@ -92,7 +96,7 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
                 <span>📰 Noticias & Artículos</span>
               </Link>
 
-              <Link
+              <Link onClick={onClose}
                 href="/admin/editor"
                 className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${
                   isActive("/admin/editor")
@@ -123,7 +127,7 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
 
           {openSections.envivo && (
             <div className="p-1 space-y-0.5">
-              <Link
+              <Link onClick={onClose}
                 href="/admin/live"
                 className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${
                   isActive("/admin/live")
@@ -135,7 +139,7 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
                 <span>Nora Live Exteriores</span>
               </Link>
 
-              <Link
+              <Link onClick={onClose}
                 href="/admin/flashes"
                 className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${
                   isActive("/admin/flashes")
@@ -147,7 +151,7 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
                 <span>Flashes Noticiosos (1-5 min)</span>
               </Link>
 
-              <Link
+              <Link onClick={onClose}
                 href="/admin/clipper"
                 className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${
                   isActive("/admin/clipper")
@@ -178,7 +182,7 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
 
           {openSections.calle && (
             <div className="p-1 space-y-0.5">
-              <Link
+              <Link onClick={onClose}
                 href="/admin/corresponsal"
                 className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${
                   isActive("/admin/corresponsal")
@@ -189,7 +193,19 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
                 <span>📥 Cola de Staging & Doble-Copia</span>
               </Link>
 
-              <Link
+              <Link onClick={onClose}
+                href="/corresponsal-movil"
+                target="_blank"
+                className="px-3 py-2 rounded-lg font-bold flex items-center justify-between text-orange-400 hover:bg-orange-500/10 transition-colors border border-orange-500/20"
+              >
+                <span className="flex items-center gap-2">
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Terminal Nora Móvil</span>
+                </span>
+                <span className="text-[9px] px-1 py-0.5 rounded bg-orange-500/20 text-orange-300 font-mono">CALLE</span>
+              </Link>
+
+              <Link onClick={onClose}
                 href="/admin/qr"
                 className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${
                   isActive("/admin/qr")
@@ -220,7 +236,7 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
 
           {openSections.distribucion && (
             <div className="p-1 space-y-0.5">
-              <Link
+              <Link onClick={onClose}
                 href="/admin/distribution"
                 className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${
                   isActive("/admin/distribution")
@@ -231,7 +247,7 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
                 <span>🌐 Hub Omnicanal (WP & Redes)</span>
               </Link>
 
-              <Link
+              <Link onClick={onClose}
                 href="/admin/settings"
                 className={`px-3 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors ${
                   isActive("/admin/settings")
@@ -247,6 +263,27 @@ export default function AdminSidebar({ userRole = "Director", onLogout }: AdminS
         </div>
 
       </nav>
+
+      {/* Quick Access Card for Nora Móvil */}
+      <div className="p-3 mx-3 mb-2 rounded-xl bg-gradient-to-br from-orange-500/10 via-red-500/10 to-transparent border border-orange-500/30">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] font-black text-orange-400 uppercase tracking-wider flex items-center gap-1">
+            <Radio className="w-3 h-3 animate-pulse text-red-500" /> Nora Móvil
+          </span>
+          <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 font-bold">PWA N1</span>
+        </div>
+        <p className="text-[10px] text-slate-300 leading-tight mb-2">
+          Periodista de exteriores en el celular con audio y fotos en vivo.
+        </p>
+        <Link
+          onClick={onClose}
+          href="/corresponsal-movil"
+          target="_blank"
+          className="w-full py-1.5 px-2 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 shadow transition-all"
+        >
+          <Smartphone className="w-3 h-3" /> Abrir Nora en Celular
+        </Link>
+      </div>
 
       {/* Footer Branding */}
       <div className="p-4 border-t border-white/10 bg-black/40 flex items-center justify-between text-[11px] text-white/50">

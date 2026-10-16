@@ -1,19 +1,50 @@
 "use client";
 
-import { useState } from "react";
-import { QrCode, Download, Printer, Share2, Copy, Check, Radio, Sparkles, ShieldAlert, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { QrCode, Download, Printer, Share2, Copy, Check, Radio, Sparkles, ShieldAlert, ArrowLeft, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import QRCode from "qrcode";
 
 export default function AdminCitizenQrPage() {
-  const targetUrl = "https://www.nexativanews.com.ar/corresponsal-movil";
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(targetUrl)}&color=000000&bgcolor=ffffff&qzone=2`;
-
+  const [targetUrl, setTargetUrl] = useState("https://prensa-nexora-cadena4.vercel.app/corresponsal-movil");
+  const [qrDataUrl, setQrDataUrl] = useState("");
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}/corresponsal-movil`;
+      setTargetUrl(url);
+
+      QRCode.toDataURL(
+        url,
+        {
+          width: 500,
+          margin: 2,
+          color: {
+            dark: "#000000",
+            light: "#ffffff",
+          },
+        },
+        (err, dataUri) => {
+          if (!err && dataUri) {
+            setQrDataUrl(dataUri);
+          }
+        }
+      );
+    }
+  }, []);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(targetUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(
+      `🎙️ *CADENA 4 • TERMINAL DE EXTERIORES NORA MÓVIL*\n\nAcceso directo para móviles, cronistas y corresponsales:\n${targetUrl}\n\nPIN de Ingreso: *MovilCalle123*\n\n(Abre el enlace para enviar audios, fotos y testimonios de la calle directo a la mesa de noticias)`
+    );
+    window.open(`https://wa.me/?text=${text}`, "_blank");
   };
 
   const handlePrint = () => {
@@ -28,11 +59,11 @@ export default function AdminCitizenQrPage() {
           <Link href="/admin/corresponsal" className="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 hover:underline mb-1">
             <ArrowLeft className="w-3.5 h-3.5" /> Volver a Cola de Corresponsalía
           </Link>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <QrCode className="w-8 h-8 text-red-500" /> Código QR: Periodismo Ciudadano
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
+            <QrCode className="w-8 h-8 text-red-500" /> Código QR: Nora Periodista de Exteriores
           </h1>
           <p className="text-gray-400 text-sm max-w-2xl">
-            Imprime o comparte este Código QR en afiches, redes o pantallas. Permite a vecinos y transeúntes enviar fotos, textos y audios de sucesos en la vía pública de forma anónima hacia Estudio Nexativa.
+            Imprime o comparte este Código QR en afiches, redes o envía a los periodistas de calle. Permite enviar audios con transcripción, fotos y testimonios directos a la redacción central.
           </p>
         </div>
 
@@ -47,38 +78,47 @@ export default function AdminCitizenQrPage() {
         {/* Poster Card */}
         <div className="bg-white text-slate-900 p-8 rounded-3xl border-4 border-red-600 shadow-2xl space-y-6 text-center print:border-none print:shadow-none print:p-0">
           <div className="bg-red-600 text-white py-2 px-4 rounded-xl font-black text-sm uppercase tracking-widest inline-flex items-center gap-2">
-            <Radio className="w-4 h-4 animate-pulse" /> NORA LIVE PERIODISMO CIUDADANO
+            <Radio className="w-4 h-4 animate-pulse" /> NORA MÓVIL • EXTERIORES
           </div>
 
           <div className="space-y-1">
-            <h2 className="text-2xl font-black text-black leading-tight">
-              ¿PRESENCIAS UN SUCESO EN TU BARRIO O LA CALLE?
+            <h2 className="text-2xl font-black text-black leading-tight uppercase">
+              ¿PRESENCIAS UN SUCESO EN LA CALLE O BARRIO?
             </h2>
             <p className="text-sm font-bold text-red-600 uppercase">
-              ¡Sé el primero en informar de forma anónima y gratuita!
+              ¡Envía audio, fotos o relatos al estudio en tiempo real!
             </p>
           </div>
 
           {/* QR Container */}
           <div className="bg-slate-100 p-6 rounded-2xl border-2 border-slate-300 inline-block shadow-inner">
-            <img 
-              src={qrImageUrl} 
-              alt="Código QR Periodismo Ciudadano Nora Live" 
-              className="w-64 h-64 mx-auto rounded-lg shadow-md"
-            />
+            {qrDataUrl ? (
+              <img 
+                src={qrDataUrl} 
+                alt="Código QR Nora Móvil Exteriores" 
+                className="w-64 h-64 mx-auto rounded-lg shadow-md"
+              />
+            ) : (
+              <div className="w-64 h-64 flex items-center justify-center font-mono text-xs text-slate-500">
+                Generando Código QR...
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
             <p className="text-xs font-bold text-slate-700">
-              Escanea este Código QR con la cámara de tu celular para enviar fotos, audios o relatos en vivo al estudio de Prensa NexoraOne • Cadena 4.
+              Escanea este Código QR con la cámara de tu celular para abrir la terminal de Nora Móvil.
             </p>
-            <span className="text-[11px] font-mono text-slate-500 block">
+            <span className="text-[11px] font-mono text-slate-600 block break-all font-bold">
               {targetUrl}
             </span>
+            <div className="text-[10px] text-slate-500 font-mono bg-slate-100 py-1 px-2 rounded">
+              PIN de cronista acreditado: <strong>MovilCalle123</strong>
+            </div>
           </div>
 
           <div className="pt-4 border-t border-slate-200 text-[10px] text-slate-500 font-mono flex items-center justify-between">
-            <span>Soporte Tecnológico: <strong>Nexora One</strong></span>
+            <span>Soporte: <strong>Nexora One</strong></span>
             <span>Redacción: <strong>Prensa NexoraOne • Cadena 4</strong></span>
           </div>
         </div>
@@ -87,25 +127,41 @@ export default function AdminCitizenQrPage() {
         <div className="space-y-6">
           <div className="bg-slate-950 border border-white/10 p-6 rounded-2xl space-y-4 shadow-xl">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-red-500" /> Acciones de Difusión
+              <Sparkles className="w-5 h-5 text-red-500" /> Acciones Inmediatas
             </h3>
 
             <div className="space-y-3">
               <a
-                href={qrImageUrl}
-                download="QR_Periodismo_Ciudadano_Nexativa.png"
+                href="/corresponsal-movil"
                 target="_blank"
                 rel="noreferrer"
-                className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm transition-all shadow-lg"
+                className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-extrabold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm transition-all shadow-lg shadow-orange-500/20"
               >
-                <Download className="w-4 h-4" /> Descargar Código QR (Alta Resolución HD)
+                <ExternalLink className="w-4 h-4" /> 📲 Abrir Nora Móvil en este Dispositivo
               </a>
 
               <button
-                onClick={handlePrint}
-                className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm transition-all"
+                onClick={handleShareWhatsApp}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm transition-all shadow-md shadow-emerald-600/20"
               >
-                <Printer className="w-4 h-4" /> Imprimir Afiche / Cartelera
+                <Share2 className="w-4 h-4" /> 💬 Enviar Acceso a Movileros por WhatsApp
+              </button>
+
+              {qrDataUrl && (
+                <a
+                  href={qrDataUrl}
+                  download="QR_Nora_Movil_Exteriores.png"
+                  className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm transition-all"
+                >
+                  <Download className="w-4 h-4" /> Descargar Código QR (PNG HD)
+                </a>
+              )}
+
+              <button
+                onClick={handlePrint}
+                className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm transition-all"
+              >
+                <Printer className="w-4 h-4" /> Imprimir Cartelera / Afiche
               </button>
 
               <button
@@ -115,7 +171,7 @@ export default function AdminCitizenQrPage() {
                 {copied ? (
                   <> <Check className="w-4 h-4 text-emerald-400" /> Enlace Copiado al Portapapeles </>
                 ) : (
-                  <> <Copy className="w-4 h-4 text-amber-400" /> Copiar Enlace Directo Móvil </>
+                  <> <Copy className="w-4 h-4 text-amber-400" /> Copiar Enlace Directo </>
                 )}
               </button>
             </div>
@@ -124,10 +180,10 @@ export default function AdminCitizenQrPage() {
           {/* Legal Protection Card Summary */}
           <div className="bg-amber-950/40 border border-amber-500/30 p-5 rounded-2xl space-y-2 text-xs text-amber-200">
             <div className="flex items-center gap-2 font-bold text-amber-400">
-              <ShieldAlert className="w-4 h-4" /> Cobertura Legal y Filtro Periodístico
+              <ShieldAlert className="w-4 h-4" /> Blindaje Editorial y Filtro Anti-Fake News
             </div>
             <p className="leading-relaxed">
-              Todos los reportes enviados a través de este QR ingresan en estado <strong>Pendiente de Verificación (Prioridad Secundaria)</strong>. El sistema incluye la cláusula de deslinde de responsabilidad de <strong>Nexora One & Prensa NexoraOne • Cadena 4</strong> para proteger a la firma ante cualquier material no verificado.
+              Todo material enviado desde exteriores ingresa en estado <strong>Pendiente de Revisión</strong> en la sección <strong>Calle & Corresponsalía</strong>. El editor de piso tiene la potestad de escuchar el audio, verificar los hechos y generar copys para redes sociales con un solo clic.
             </p>
           </div>
         </div>
@@ -135,4 +191,3 @@ export default function AdminCitizenQrPage() {
     </div>
   );
 }
-
