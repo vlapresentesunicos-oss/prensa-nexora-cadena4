@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import MediaUploader from "@/components/MediaUploader";
 import NoraAssistant from "@/components/NoraAssistant";
+import QuickShareModal from "@/components/Admin/QuickShareModal";
 import { ArrowLeft, Save, Globe, Share2, Sparkles, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
 
@@ -16,6 +17,7 @@ function EditorContent() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dispatching, setDispatching] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [operatorName, setOperatorName] = useState("Editor");
 
   const [formData, setFormData] = useState({
@@ -163,7 +165,7 @@ function EditorContent() {
 
           <button
             type="button"
-            onClick={handlePublishAll}
+            onClick={() => setIsShareModalOpen(true)}
             disabled={dispatching}
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-red-500/20 transition-all flex items-center gap-2"
           >

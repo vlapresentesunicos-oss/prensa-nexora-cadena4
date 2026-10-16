@@ -44,6 +44,7 @@ import Link from "next/link";
 import { getClosestLocation, parseCoordinates } from "@/lib/location-db";
 import { supabase } from "@/lib/supabase/client";
 import { getStaffRole } from "../actions";
+import QuickShareModal from "@/components/Admin/QuickShareModal";
 
 export default function CorresponsalStagingPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export default function CorresponsalStagingPage() {
   const [newPartnerName, setNewPartnerName] = useState("");
   const [newPartnerUrl, setNewPartnerUrl] = useState("");
   const [selectedPartners, setSelectedPartners] = useState<Record<string, string[]>>({});
+  const [shareModalItem, setShareModalItem] = useState<any>(null);
   
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -1183,6 +1185,11 @@ export default function CorresponsalStagingPage() {
           </div>
         </div>
       )}
+        <QuickShareModal
+        isOpen={!!shareModalItem}
+        onClose={() => setShareModalItem(null)}
+        article={shareModalItem}
+      />
     </div>
   );
 }

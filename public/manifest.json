@@ -1,22 +1,37 @@
 {
-
-  "name": "Prensa NexoraOne • Corresponsal Móvil",
-  "short_name": "Prensa Móvil",
-  "description": "Terminal Móvil de Cobertura Periodística y Reporte Ciudadano por Nexora One",
-  "start_url": "/corresponsal-movil",
+  "name": "Prensa NexoraOne • Cadena 4",
+  "short_name": "Prensa N1",
+  "description": "Suite Enterprise de Periodismo, Cobertura en Vivo con IA, Auto-Clipper y Distribución Omnicanal",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#050505",
-  "theme_color": "#ef4444",
+  "orientation": "portrait-primary",
+  "background_color": "#030712",
+  "theme_color": "#ea580c",
   "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

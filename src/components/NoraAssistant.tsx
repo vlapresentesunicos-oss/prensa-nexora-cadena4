@@ -202,7 +202,7 @@ export default function NoraAssistant({
           <Sparkles className="text-purple-400 w-6 h-6" />
         </div>
         <div>
-          <h3 className="font-bold text-lg text-white">Nora IA <span className="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-full ml-2">Nexativa Brain</span></h3>
+          <h3 className="font-bold text-lg text-white">Nora IA <span className="text-[11px] bg-gradient-to-r from-orange-500 to-amber-500 text-black font-extrabold px-2.5 py-0.5 rounded-full ml-2 shadow-sm tracking-wide">Nexora Brain</span></h3>
           <p className="text-xs text-purple-200">Editora, CM y Asesora</p>
         </div>
       </div>
@@ -313,68 +313,78 @@ export default function NoraAssistant({
         </div>
       ) : (
         <div className="space-y-3 relative z-10">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2 mb-1">
-            <button
-              onClick={handleAskEditor}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 bg-black/40 hover:bg-purple-600/30 border border-purple-500/30 text-white py-2 px-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
-              title="Mejorar Redacción y SEO"
-            >
-              {loading && activeMode === "editora" ? (
-                <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-              ) : (
-                <PenTool className="w-4 h-4 text-purple-400 group-hover:text-white transition-colors" />
-              )}
-              <span className="font-medium text-xs">Editora</span>
-            </button>
+          <div className="space-y-2 mb-2">
+            {/* Fila 1: Redacción, Estrategia y Traducción Políglota */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={handleAskEditor}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 bg-black/40 hover:bg-purple-600/30 border border-purple-500/30 text-white py-2.5 px-2 rounded-xl transition-all duration-200 disabled:opacity-50 group cursor-pointer"
+                title="Mejorar Redacción y SEO"
+              >
+                {loading && activeMode === "editora" ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400 shrink-0" />
+                ) : (
+                  <PenTool className="w-3.5 h-3.5 text-purple-400 group-hover:text-white shrink-0" />
+                )}
+                <span className="font-bold text-xs truncate">Editora</span>
+              </button>
 
-            <button
-              onClick={handleAskMarketing}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 bg-black/40 hover:bg-amber-600/30 border border-amber-500/30 text-white py-2 px-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
-              title="Estrategias, Guiones y Ads"
-            >
-              {loading && activeMode === "publicista" ? (
-                <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-              ) : (
-                <Lightbulb className="w-4 h-4 text-amber-400 group-hover:text-white transition-colors" />
-              )}
-              <span className="font-medium text-xs">Estratega</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleAskMarketing}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 bg-black/40 hover:bg-amber-600/30 border border-amber-500/30 text-white py-2.5 px-2 rounded-xl transition-all duration-200 disabled:opacity-50 group cursor-pointer"
+                title="Estrategia, Citas y Titulares"
+              >
+                {loading && activeMode === "publicista" ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400 shrink-0" />
+                ) : (
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-400 group-hover:text-white shrink-0" />
+                )}
+                <span className="font-bold text-xs truncate">Estratega</span>
+              </button>
 
-            <button
-              onClick={handleAskCM}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 bg-black/40 hover:bg-pink-600/30 border border-pink-500/30 text-white py-2 px-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
-              title="Generar Copys Virales"
-            >
-              {loading && activeMode === "cm" ? (
-                <Loader2 className="w-4 h-4 animate-spin text-pink-400" />
-              ) : (
-                <Share2 className="w-4 h-4 text-pink-400 group-hover:text-white transition-colors" />
-              )}
-              <span className="font-medium text-xs">CM Redes</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => { setActiveMode("traductora"); setResponseHtml(null); }}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 bg-black/40 hover:bg-blue-600/30 border border-blue-500/30 text-white py-2.5 px-2 rounded-xl transition-all duration-200 disabled:opacity-50 group cursor-pointer"
+                title="Traducir entrevistas (Portugués, Inglés, Italiano)"
+              >
+                <Languages className="w-3.5 h-3.5 text-blue-400 group-hover:text-white shrink-0" />
+                <span className="font-bold text-xs truncate">Traductora</span>
+              </button>
+            </div>
 
-            <button
-              onClick={() => { setActiveMode("soporte"); setResponseHtml(null); }}
-              className="flex items-center justify-center gap-2 bg-black/40 hover:bg-blue-600/30 border border-blue-500/30 text-white py-2 px-2 rounded-lg transition-all duration-300 group cursor-pointer"
-              title="Soporte Técnico"
-            >
-              <Sparkles className="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" />
-              <span className="font-medium text-xs">Soporte</span>
-            </button>
+            {/* Fila 2: CM Redes y Soporte Técnico */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleAskCM}
+                disabled={loading}
+                className="flex items-center justify-center gap-1.5 bg-black/40 hover:bg-pink-600/30 border border-pink-500/30 text-white py-2.5 px-2 rounded-xl transition-all duration-200 disabled:opacity-50 group cursor-pointer"
+                title="Generar Copys Virales para Redes"
+              >
+                {loading && activeMode === "cm" ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-pink-400 shrink-0" />
+                ) : (
+                  <Share2 className="w-3.5 h-3.5 text-pink-400 group-hover:text-white shrink-0" />
+                )}
+                <span className="font-bold text-xs">CM Redes</span>
+              </button>
 
-            <button
-              onClick={() => { setActiveMode("traductora"); setResponseHtml(null); }}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 bg-black/40 hover:bg-blue-600/30 border border-blue-500/30 text-white py-2 px-2 rounded-lg transition-all duration-300 group cursor-pointer"
-              title="Traducir entrevistas en Portugués, Inglés o Italiano"
-            >
-              <Languages className="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" />
-              <span className="font-medium text-xs">Traductora</span>
-            </button>
-
+              <button
+                type="button"
+                onClick={() => { setActiveMode("soporte"); setResponseHtml(null); }}
+                className="flex items-center justify-center gap-1.5 bg-black/40 hover:bg-cyan-600/30 border border-cyan-500/30 text-white py-2.5 px-2 rounded-xl transition-all duration-200 group cursor-pointer"
+                title="Soporte Técnico Editorial"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 group-hover:text-white shrink-0" />
+                <span className="font-bold text-xs">Soporte</span>
+              </button>
+            </div>
           </div>
 
           {/* Button to Train Nora */}
