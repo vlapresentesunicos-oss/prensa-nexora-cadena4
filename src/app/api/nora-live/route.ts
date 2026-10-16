@@ -17,7 +17,17 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    const { message, currentDraft, image, audio, video, image_url, audio_url, video_url } = await request.json();
+    const { 
+      message, 
+      currentDraft, 
+      image, 
+      audio, 
+      video, 
+      image_url, 
+      audio_url, 
+      video_url,
+      interview_language = "auto"
+    } = await request.json();
 
     if (!message && !image && !audio && !video && !image_url && !audio_url && !video_url) {
       return NextResponse.json(
@@ -28,13 +38,17 @@ export async function POST(request: Request) {
 
     const editorialMemory = await getDynamicEditorialContext();
 
-    // 1. Si hay audio, transcribir primero con Groq Whisper (ultra-rápido en 400ms)
+    // 1. Transcripción con Groq Whisper Large v3 (Multilingual con detección automática)
     let audioTranscript = "";
+    let detectedLang: string | undefined = undefined;
+
     if (audio) {
       try {
         const audioBase64 = audio.includes(",") ? audio.split(",")[1] : audio;
         const audioBuffer = Buffer.from(audioBase64, "base64");
-        audioTranscript = await transcribeAudioWithGroq(audioBuffer, "reporte_voz.webm");
+        const res = await transcribeAudioWithGroq(audioBuffer, "reporte_voz.webm", interview_language);
+        audioTranscript = res.text;
+        detectedLang = res.detectedLanguage;
       } catch (err: any) {
         console.warn("[Nora Live] Groq Whisper falló, recurriendo a Gemini audio:", err?.message);
       }
@@ -43,13 +57,15 @@ export async function POST(request: Request) {
         const aRes = await fetch(audio_url);
         if (aRes.ok) {
           const aBuf = await aRes.arrayBuffer();
-          audioTranscript = await transcribeAudioWithGroq(Buffer.from(aBuf), "reporte_remoto.webm");
+          const res = await transcribeAudioWithGroq(Buffer.from(aBuf), "reporte_remoto.webm", interview_language);
+          audioTranscript = res.text;
+          detectedLang = res.detectedLanguage;
         }
       } catch (err) {}
     }
 
     const promptDirectives = `
-Eres NORA, la Redactora Jefa de Prensa NexoraOne.
+Eres NORA, la Redactora Jefa y Asistente Editorial de Prensa NexoraOne.
 Firma y Tecnología Oficial: Desarrollado por Nexora One © Todos los derechos reservados.
 
 DIRECTIVAS CENTRALES DE VOZ, TONO Y ESTILO:
@@ -57,18 +73,29 @@ DIRECTIVAS CENTRALES DE VOZ, TONO Y ESTILO:
 2. CERO MODISMOS LOCALES: Quedan terminantemente prohibidos modismos o giros regionales (NO uses "che", "mirá", "dale", "viste", "boludo", "copado", etc.). Tu lenguaje debe ser universal, transparente, respetuoso y de prestigio.
 3. RIGOR PERIODÍSTICO Y LEGAL: Usa la estructura de pirámide invertida (Qué, Quién, Cuándo, Dónde, Por qué y Cómo). Mantén estricto resguardo legal usando términos preventivos ("presunto", "bajo investigación oficial", "se habrían producido").
 
+4. PROTOCOLO POLÍGLOTA DE ESCUCHA Y TRADUCCIÓN PERIODÍSTICA:
+- Posees capacidad nativa para escuchar, interpretar y comprender entrevistas en PORTUGUÉS, INGLÉS, ITALIANO y ESPAÑOL.
+- DETECCIÓN Y TRADUCCIÓN: Si el entrevistado o el audio proporcionado está en portugués, inglés o italiano (o si el operador seleccionó un idioma extranjero):
+  a) Interpreta con total fidelidad el sentido periodístico y traduce las declaraciones directamente al ESPAÑOL NEUTRO LATINO.
+  b) En el borrador (<DRAFT>), toda la noticia debe quedar redactada en ESPAÑOL NEUTRO fluido. Para citas textuales relevantes, incluye la declaración traducida al español entre comillas con la indicación protocolar (ej: «[Traducción al español]», declaró el entrevistado en portugués original).
+  c) En tu respuesta al periodista (<REPLY>), notifícale con cortesía el idioma detectado y resume las declaraciones traducidas.
+
 ${editorialMemory}
 
 CRÍTICO - FORMATO DE RESPUESTA:
 Debes responder obligatoriamente con dos secciones delimitadas por etiquetas:
 
 <REPLY>
-[Escribe tu respuesta al periodista en tono sumamente profesional, cálido y elegante en Español Neutro Latino. Indícale qué datos se incorporaron y qué testimonios u observaciones adicionales se requieren para cerrar el informe.]
+[Escribe tu respuesta al periodista en tono sumamente profesional, cálido y elegante en Español Neutro Latino. Si hubo traducción de una entrevista extranjera (portugués, inglés, italiano), confírmalo claramente indicando el idioma original y el contexto.]
 </REPLY>
 
 <DRAFT>
-[Escribe el borrador completo, estructurado y actualizado del artículo en formato HTML simple (usa <p>, <strong>), integrando la nueva información de manera fluida y profesional.]
+[Escribe el borrador completo, estructurado y actualizado del artículo en formato HTML simple (usa <p>, <strong>), integrando la nueva información de manera fluida y profesional en Español Neutro.]
 </DRAFT>
+
+---
+IDIOMA SELECCIONADO / DETECTADO:
+${detectedLang ? `Idioma detectado por Whisper: ${detectedLang}` : `Preferencia del operador: ${interview_language}`}
 
 ---
 BORRADOR ANTERIOR:
@@ -76,11 +103,11 @@ ${currentDraft || "El borrador está vacío actualmente."}
 
 ---
 NUEVO REPORTE DEL PERIODISTA:
-${message ? `Texto: "${message}"` : ""}
-${audioTranscript ? `Transcripción de Audio de Voz: "${audioTranscript}"` : ""}
+${message ? `Texto o Declaración: "${message}"` : ""}
+${audioTranscript ? `Transcripción de Audio de la Entrevista: "${audioTranscript}"` : ""}
 `;
 
-    // 2. Si no hay video ni imagen directa, resolver a la velocidad de la luz con Groq Llama 3.3
+    // 2. Si no hay video ni imagen directa, resolver con Groq Llama 3.3 (70B)
     if (!video && !video_url && !image && !image_url) {
       const groq = getGroqClient();
       if (groq) {
@@ -88,8 +115,8 @@ ${audioTranscript ? `Transcripción de Audio de Voz: "${audioTranscript}"` : ""}
           const completion = await groq.chat.completions.create({
             model: GROQ_MODELS.text,
             messages: [{ role: "user", content: promptDirectives }],
-            temperature: 0.4,
-            max_tokens: 2000,
+            temperature: 0.3,
+            max_tokens: 2200,
           });
 
           const rawText = completion.choices[0]?.message?.content || "";
@@ -98,8 +125,9 @@ ${audioTranscript ? `Transcripción de Audio de Voz: "${audioTranscript}"` : ""}
 
           return NextResponse.json(
             {
-              reply: replyMatch ? replyMatch[1].trim() : "Borrador actualizado con el reporte.",
+              reply: replyMatch ? replyMatch[1].trim() : "Borrador actualizado con la entrevista interpretada.",
               newDraft: draftMatch ? draftMatch[1].trim() : rawText,
+              detectedLanguage: detectedLang,
               provider: "groq-lpu-llama3.3",
             },
             { headers: corsHeaders }
@@ -110,7 +138,7 @@ ${audioTranscript ? `Transcripción de Audio de Voz: "${audioTranscript}"` : ""}
       }
     }
 
-    // 3. Si hay video, imagen o fallo Groq: Usar Gemini Multi-Key con capacidad de vision y video
+    // 3. Fallback / Multimodal con Gemini Multi-Key
     let parts: any[] = [{ text: promptDirectives }];
 
     if (image) {
@@ -150,6 +178,7 @@ ${audioTranscript ? `Transcripción de Audio de Voz: "${audioTranscript}"` : ""}
       {
         reply: replyMatch ? replyMatch[1].trim() : "Borrador actualizado.",
         newDraft: draftMatch ? draftMatch[1].trim() : geminiRaw,
+        detectedLanguage: detectedLang,
         provider: "gemini-multimodal-cascade",
       },
       { headers: corsHeaders }

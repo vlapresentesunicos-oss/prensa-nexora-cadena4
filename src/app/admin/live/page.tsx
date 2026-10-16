@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Image as ImageIcon, Loader2, CheckCircle, Mic, Square, MapPin, Camera, Video } from "lucide-react";
+import { Send, Image as ImageIcon, Loader2, CheckCircle, Mic, Square, MapPin, Camera, Video, Globe, Languages } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { getClosestLocation } from "@/lib/location-db";
 
@@ -10,6 +10,8 @@ export default function NoraLiveEditor() {
   const [messages, setMessages] = useState<{role: 'user'|'nora', text: string}[]>([]);
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedLang, setSelectedLang] = useState<string>("auto");
+  const [detectedLangBadge, setDetectedLangBadge] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [published, setPublished] = useState(false);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
@@ -152,6 +154,9 @@ export default function NoraLiveEditor() {
       const data = await postToNoraLive({ message: userMsg, currentDraft: draft });
       if (data.newDraft) {
         setDraft(data.newDraft);
+        if (data.detectedLanguage && data.detectedLanguage !== 'spanish') {
+          setDetectedLangBadge(data.detectedLanguage);
+        }
       }
       setMessages(prev => [...prev, { role: 'nora', text: data.reply || "Borrador actualizado." }]);
     } catch (e: any) {
@@ -557,6 +562,48 @@ export default function NoraLiveEditor() {
           )}
           <div ref={endOfMessagesRef} />
         </div>
+
+        
+        {/* Selector Políglota de Escucha y Traducción de Entrevistas */}
+        <div className="px-4 py-2 bg-black/50 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-1.5 text-orange-400/80">
+            <Languages className="w-3.5 h-3.5" />
+            <span className="font-semibold text-[11px] uppercase tracking-wider">Escucha / Entrevista:</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {[
+              { id: 'auto', label: 'Auto (Detectar)', flag: '🌐' },
+              { id: 'pt', label: 'Português', flag: '🇧🇷' },
+              { id: 'en', label: 'English', flag: '🇺🇸' },
+              { id: 'it', label: 'Italiano', flag: '🇮🇹' },
+              { id: 'es', label: 'Español', flag: '🇦🇷' },
+            ].map(lang => (
+              <button
+                key={lang.id}
+                type="button"
+                onClick={() => setSelectedLang(lang.id)}
+                className={`px-2 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 ${
+                  selectedLang === lang.id
+                    ? 'bg-orange-500 text-black font-bold shadow'
+                    : 'bg-white/5 hover:bg-white/10 text-white/70'
+                }`}
+              >
+                <span>{lang.flag}</span>
+                <span className="hidden sm:inline">{lang.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {detectedLangBadge && (
+          <div className="mx-4 my-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center justify-between text-xs text-blue-300">
+            <span className="flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-blue-400" />
+              <span>Entrevista interpretada desde el <strong>{detectedLangBadge}</strong> al <strong>Español Neutro</strong></span>
+            </span>
+            <button onClick={() => setDetectedLangBadge(null)} className="text-white/40 hover:text-white">✕</button>
+          </div>
+        )}
 
         <div className="p-4 border-t border-white/10 bg-black/60 flex items-center gap-2">
           <label className="p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-gray-400 cursor-pointer shrink-0" title="Adjuntar imagen">

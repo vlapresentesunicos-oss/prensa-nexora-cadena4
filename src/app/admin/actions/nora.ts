@@ -233,3 +233,52 @@ Devuelve estrictamente un JSON con:
     };
   }
 }
+
+export async function translateInterview(
+  foreignText: string,
+  sourceLanguage: string = "auto",
+  operatorName: string = "Estimado colega"
+): Promise<NoraActionResult> {
+  try {
+    const systemPrompt = `
+Actúas como Traductora e Intérprete Periodística de Prensa NexoraOne.
+Firma: Nexora One.
+DIRECTIVA DE TONO: Estricto Español Neutro Latino de alta gama (cero modismos locales).
+Capacidades: Comprendes fluidamente declaraciones en Portugués, Inglés e Italiano.
+
+TAREA:
+Traduce e interpreta la siguiente declaración o entrevista extranjera (${sourceLanguage}) al ESPAÑOL NEUTRO LATINO de prestigio.
+Entrega:
+1. Declaración traducida de forma fidedigna y con estilo periodístico.
+2. Frases textuales clave entrecomilladas listas para insertar en el artículo, indicando el idioma original (ej: "«...», afirmó en portugués original").
+
+Devuelve estrictamente un JSON con esta estructura:
+{
+  "htmlForPanel": "<p>Estimado/a ${operatorName}: He procesado la traducción del testimonio...</p>",
+  "newTitle": "Titular en español basado en la declaración",
+  "newContent": "<p>Texto completo y declaraciones traducidas en HTML limpio.</p>"
+}
+`;
+
+    const userPrompt = `Interpreta y traduce esta entrevista/declaración:
+IDIOMA FUENTE: ${sourceLanguage}
+CONTENIDO: ${foreignText}`;
+    const rawRes = await dispatchToNoraAI(userPrompt, systemPrompt, true);
+    const cleaned = rawRes.replace(/```json/gi, "").replace(/```/g, "").trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : cleaned);
+
+    return {
+      success: true,
+      text: parsed.htmlForPanel || `<p>${cleaned}</p>`,
+      newTitle: parsed.newTitle || "Declaraciones Traducidas",
+      newContent: parsed.newContent || foreignText,
+    };
+  } catch (err: any) {
+    console.error("[translateInterview Error]", err);
+    return {
+      success: false,
+      error: err?.message || "No se pudo traducir la entrevista.",
+    };
+  }
+}

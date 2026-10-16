@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     const isAnonymous = formData.get("is_anonymous") === "true";
     const coordsStr = (formData.get("geolocation_coordinates") as string) || "-27.5973, -56.6874";
     const attachedMediaUrlStr = formData.get("attached_media_url") as string;
+    const interviewLanguage = (formData.get("interview_language") as string) || "auto";
 
     let attachedMediaUrls: string[] = [];
     if (attachedMediaUrlStr) {
@@ -26,16 +27,21 @@ export async function POST(req: Request) {
       }
     }
 
-    // Procesar audio si viene en el FormData
+    // Procesar audio si viene en el FormData con transcripción políglota
     const audioFile = formData.get("audio") as File | null;
     let transcription = draftText;
+    let detectedAudioLang: string | undefined = undefined;
 
     if (audioFile && audioFile.size > 0) {
       try {
         const audioBuffer = Buffer.from(await audioFile.arrayBuffer());
-        const sttText = await transcribeAudioWithGroq(audioBuffer, audioFile.name || "audio.webm");
-        if (sttText) {
-          transcription = transcription ? `${transcription}\n\n[Reporte de audio]: ${sttText}` : sttText;
+        const stt = await transcribeAudioWithGroq(audioBuffer, audioFile.name || "audio.webm", interviewLanguage);
+        if (stt.text) {
+          detectedAudioLang = stt.detectedLanguage;
+          const langNote = detectedAudioLang && detectedAudioLang !== "spanish" 
+            ? ` [Audio detectado en: ${detectedAudioLang}]` 
+            : "";
+          transcription = transcription ? `${transcription}\n\n[Reporte de audio${langNote}]: ${stt.text}` : stt.text;
         }
       } catch (audioErr: any) {
         console.warn("[Corresponsal STT] Falló Groq Whisper, continuando con texto directo:", audioErr?.message);
@@ -57,7 +63,11 @@ Eres NORA, la Redactora Jefa de Prensa NexoraOne.
 Firma y Tecnología Oficial: Nexora One © Todos los derechos reservados.
 
 TAREA EDITORIAL:
-Procesa este reporte de corresponsalía de calle y genera exactamente DOS versiones periodísticas independientes en ESPAÑOL NEUTRO LATINO de alta gama (cero modismos locales, tono formal, elegante y riguroso como una conductora de noticiero internacional):
+Procesa este reporte de corresponsalía de exteriores y genera exactamente DOS versiones periodísticas independientes en ESPAÑOL NEUTRO LATINO de alta gama (cero modismos locales, tono formal, elegante y riguroso como una conductora de noticiero internacional).
+
+PROTOCOLO DE ESCUCHA Y TRADUCCIÓN POLÍGLOTA:
+- Si el testimonio o entrevista adjunta fue realizada en PORTUGUÉS, INGLÉS o ITALIANO (frecuente en la zona fronteriza y turística), tradúcelo e interprétalo de forma fidedigna al ESPAÑOL NEUTRO.
+- Ambas versiones finales deben quedar publicables 100% en ESPAÑOL. Cita las declaraciones traducidas y aclara con rigor: (ej: "«...declaración traducida...», expresó en portugués original").
 
 1. VERSION A (Portal Propio):
    - Título impactante y optimizado para buscadores.
@@ -75,6 +85,7 @@ ${memoryContext}
 DATOS DEL REPORTE:
 Corresponsal: ${isAnonymous ? "Reporte Ciudadano Anónimo" : corresponsalName}
 ${locationContext}
+${detectedAudioLang ? `Idioma Detectado en Entrevista: ${detectedAudioLang}` : ""}
 Material informativo:
 "${transcription || "Reporte visual y fotográfico desde el lugar de los hechos."}"
 
@@ -118,13 +129,13 @@ FORMATO ESTRICTO DE RESPUESTA JSON (sin markdown ni etiquetas adicionales):
     if (!versionNexativa || !versionPartner) {
       try {
         const geminiRaw = await generateContentWithGeminiFallback([{ text: prompt }]);
-        const cleanJson = geminiRaw.replace(/```json/g, "").replace(/```/g, "").trim();
+        const cleanJson = geminiRaw.replace(/\`\`\`json/g, "").replace(/\`\`\`/g, "").trim();
         const parsed = JSON.parse(cleanJson);
         versionNexativa = parsed.version_nexativa;
         versionPartner = parsed.version_partner;
       } catch (gErr: any) {
         versionNexativa = {
-          title: `Reporte en Calle: ${transcription.substring(0, 50)}`,
+          title: `Reporte en Exteriores: ${transcription.substring(0, 50)}`,
           excerpt: transcription.substring(0, 150),
           content: `<p>${transcription}</p>`,
           tags: ["Actualidad", "Exteriores", "Cadena 4"],
@@ -167,6 +178,7 @@ FORMATO ESTRICTO DE RESPUESTA JSON (sin markdown ni etiquetas adicionales):
       message: "Reporte recibido y procesado en cola de staging",
       id: inserted.id,
       item: inserted,
+      detectedLanguage: detectedAudioLang
     });
   } catch (err: any) {
     console.error("[Corresponsal Route Error]:", err);

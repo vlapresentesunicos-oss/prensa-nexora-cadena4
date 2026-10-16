@@ -12,7 +12,20 @@ export const GROQ_MODELS = {
   whisper: process.env.GROQ_WHISPER_MODEL || "whisper-large-v3"
 };
 
-export async function transcribeAudioWithGroq(fileBlob: Blob | Buffer, filename: string = "audio.webm"): Promise<string> {
+export interface TranscriptionResult {
+  text: string;
+  detectedLanguage?: string;
+}
+
+/**
+ * Transcribe audio con Groq Whisper Large v3 con soporte políglota nativo:
+ * Español, Portugués, Inglés, Italiano y detección automática (99+ idiomas).
+ */
+export async function transcribeAudioWithGroq(
+  fileBlob: Blob | Buffer, 
+  filename: string = "audio.webm",
+  targetLanguage?: string
+): Promise<TranscriptionResult> {
   const groq = getGroqClient();
   if (!groq) throw new Error("GROQ_API_KEY no configurada");
 
@@ -20,13 +33,23 @@ export async function transcribeAudioWithGroq(fileBlob: Blob | Buffer, filename:
     ? new File([fileBlob], filename, { type: fileBlob.type || "audio/webm" })
     : new File([fileBlob as any], filename, { type: "audio/webm" });
 
-  const transcription = await groq.audio.transcriptions.create({
+  const options: any = {
     file: file as any,
     model: GROQ_MODELS.whisper,
-    language: "es",
-    response_format: "json",
+    response_format: "verbose_json",
     temperature: 0.1,
-  });
+  };
 
-  return (transcription.text || "").trim();
+  // Si el operador seleccionó un idioma específico (es, pt, en, it), lo forzamos.
+  // Si no (o si es 'auto'), dejamos que Whisper auto-detecte el idioma nativo de la entrevista.
+  if (targetLanguage && targetLanguage !== "auto") {
+    options.language = targetLanguage;
+  }
+
+  const transcription: any = await groq.audio.transcriptions.create(options);
+
+  return {
+    text: (transcription.text || "").trim(),
+    detectedLanguage: transcription.language || undefined,
+  };
 }

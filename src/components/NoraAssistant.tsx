@@ -6,10 +6,11 @@ import {
   askNoraCM, 
   askNoraSupport, 
   askNoraMarketing,
+  translateInterview,
   fetchBrandGuidelines,
   saveBrandGuidelines
 } from "@/app/admin/actions/nora";
-import { Sparkles, PenTool, Share2, Copy, Check, Loader2, Wand2, Send, Lightbulb, BrainCircuit } from "lucide-react";
+import { Sparkles, PenTool, Share2, Copy, Check, Loader2, Wand2, Send, Lightbulb, BrainCircuit, Languages, Globe } from "lucide-react";
 
 interface NoraAssistantProps {
   title: string;
@@ -35,8 +36,10 @@ export default function NoraAssistant({
   const [generatedData, setGeneratedData] = useState<{newTitle: string, newContent: string, imagePrompt?: string} | null>(null);
   
   const [copied, setCopied] = useState(false);
-  const [activeMode, setActiveMode] = useState<"editora" | "cm" | "soporte" | "publicista" | "entrenamiento" | null>(null);
+  const [activeMode, setActiveMode] = useState<"editora" | "cm" | "soporte" | "publicista" | "entrenamiento" | "traductora" | null>(null);
   const [guidelinesText, setGuidelinesText] = useState("");
+  const [sourceLang, setSourceLang] = useState<string>("auto");
+  const [foreignInput, setForeignInput] = useState<string>("");
 
   useEffect(() => {
     async function load() {
@@ -138,6 +141,34 @@ export default function NoraAssistant({
     setLoading(false);
   };
 
+  
+  const handleTranslateInterview = async () => {
+    if (!foreignInput.trim()) return;
+    setLoading(true);
+    setResponseHtml(null);
+    setGeneratedData(null);
+    
+    const res = await translateInterview(foreignInput, sourceLang, operatorName);
+    if (res.success) {
+      if (res.newTitle && res.newContent) {
+        setGeneratedData({ newTitle: res.newTitle, newContent: res.newContent });
+        setResponseHtml(`
+          ${res.text}
+          <div class="mt-4 p-4 bg-black/40 border border-white/10 rounded-lg">
+            <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-2">Traducción e Interpretación al Español Neutro:</h4>
+            <p class="font-bold text-base mb-2 text-white">${res.newTitle}</p>
+            <div class="text-gray-200 whitespace-pre-wrap text-sm">${res.newContent}</div>
+          </div>
+        `);
+      } else {
+        setResponseHtml(res.text || "");
+      }
+    } else {
+      setResponseHtml(`<p class="text-red-400">${res.error}</p>`);
+    }
+    setLoading(false);
+  };
+
   const handleAskSupport = async () => {
     const query = (document.getElementById("soporte-query") as HTMLTextAreaElement)?.value;
     if (!query) return;
@@ -208,7 +239,55 @@ export default function NoraAssistant({
             </button>
           </div>
         </div>
-      ) : activeMode === "soporte" ? (
+      
+      ) : activeMode === "traductora" ? (
+        <div className="mb-4 relative z-10 space-y-3">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <span className="text-xs font-bold text-blue-400 flex items-center gap-1.5 uppercase">
+              <Languages className="w-3.5 h-3.5" /> Traductora Políglota de Entrevistas
+            </span>
+            <div className="flex gap-1">
+              {[
+                { id: 'auto', label: 'Auto' },
+                { id: 'pt', label: 'Português' },
+                { id: 'en', label: 'English' },
+                { id: 'it', label: 'Italiano' },
+              ].map(l => (
+                <button
+                  key={l.id}
+                  onClick={() => setSourceLang(l.id)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${sourceLang === l.id ? 'bg-blue-600 text-white' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <textarea
+            value={foreignInput}
+            onChange={(e) => setForeignInput(e.target.value)}
+            placeholder="Pega aquí la transcripción o declaraciones del entrevistado en Portugués, Inglés o Italiano..."
+            className="w-full bg-black/40 border border-blue-500/30 rounded-lg p-3 text-white text-xs focus:outline-none focus:border-blue-500"
+            rows={4}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleTranslateInterview}
+              disabled={loading || !foreignInput.trim()}
+              className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg font-bold text-xs transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
+              Traducir al Español Neutro
+            </button>
+            <button
+              onClick={() => { setActiveMode(null); setResponseHtml(null); setForeignInput(""); }}
+              className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs transition-colors cursor-pointer"
+            >
+              Volver
+            </button>
+          </div>
+        </div>
+) : activeMode === "soporte" ? (
         <div className="mb-4 relative z-10">
           <textarea
             placeholder={`¿En qué puedo ayudarte, ${operatorName}? Escribe tu consulta...`}
@@ -234,7 +313,7 @@ export default function NoraAssistant({
         </div>
       ) : (
         <div className="space-y-3 relative z-10">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-1">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2 mb-1">
             <button
               onClick={handleAskEditor}
               disabled={loading}
@@ -285,6 +364,17 @@ export default function NoraAssistant({
               <Sparkles className="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" />
               <span className="font-medium text-xs">Soporte</span>
             </button>
+
+            <button
+              onClick={() => { setActiveMode("traductora"); setResponseHtml(null); }}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 bg-black/40 hover:bg-blue-600/30 border border-blue-500/30 text-white py-2 px-2 rounded-lg transition-all duration-300 group cursor-pointer"
+              title="Traducir entrevistas en Portugués, Inglés o Italiano"
+            >
+              <Languages className="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" />
+              <span className="font-medium text-xs">Traductora</span>
+            </button>
+
           </div>
 
           {/* Button to Train Nora */}
@@ -323,7 +413,7 @@ export default function NoraAssistant({
           />
 
           {/* Acciones de Autopublicación (Solo en modo Editora o Publicista si se generó data) */}
-          {(activeMode === "editora" || activeMode === "publicista") && generatedData && (
+          {(activeMode === "editora" || activeMode === "publicista" || activeMode === "traductora") && generatedData && (
             <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-white/10">
               <p className="text-xs text-purple-300 font-medium mb-1 text-center">¿Qué hacemos con esta sugerencia, {operatorName}?</p>
               

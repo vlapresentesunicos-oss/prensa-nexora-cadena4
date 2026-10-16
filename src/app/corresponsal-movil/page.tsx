@@ -49,6 +49,7 @@ export default function CorresponsalMovilPage() {
 
   // Form Fields
   const [inputText, setInputText] = useState("");
+  const [interviewLanguage, setInterviewLanguage] = useState<string>("auto");
   const [attachedImage, setAttachedImage] = useState<File | null>(null);
   const [attachedImagePreview, setAttachedImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
