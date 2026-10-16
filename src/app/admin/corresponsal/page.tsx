@@ -13,7 +13,8 @@ import {
   savePartnersList,
   StagingQueueItem,
   EditorialAlert,
-  archiveStagingItem
+  archiveStagingItem,
+  auditReportSafety
 } from "../actions/corresponsal";
 import { 
   MapPin, 
@@ -55,6 +56,8 @@ export default function CorresponsalStagingPage() {
   const [newPartnerUrl, setNewPartnerUrl] = useState("");
   const [selectedPartners, setSelectedPartners] = useState<Record<string, string[]>>({});
   const [shareModalItem, setShareModalItem] = useState<any>(null);
+  const [auditResults, setAuditResults] = useState<Record<string, any>>({});
+  const [auditingId, setAuditingId] = useState<string | null>(null);
   
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -341,6 +344,20 @@ export default function CorresponsalStagingPage() {
     } finally {
       setActionLoadingId(null);
     }
+  };
+
+  
+  const handleAuditReport = async (item: StagingQueueItem) => {
+    setAuditingId(item.id);
+    const title = item.version_partner?.title || item.raw_metadata_title || item.version_nexativa?.title || "Reporte";
+    const content = item.version_partner?.content || item.transcription || "";
+    const res = await auditReportSafety(title, content, item.operator_id);
+    if (res.success && res.report) {
+      setAuditResults(prev => ({ ...prev, [item.id]: res.report }));
+    } else {
+      alert("No se pudo completar la auditoría con Nora.");
+    }
+    setAuditingId(null);
   };
 
   const handleApprove = async (id: string, actionType: "APPROVE_NEXATIVA_ONLY" | "APPROVE_PARTNER_ONLY" | "APPROVE_ALL_SIMULTANEOUS") => {
@@ -641,6 +658,61 @@ export default function CorresponsalStagingPage() {
                     : 'border-white/5 bg-white/[0.02] opacity-70'
                 }`}
               >
+                
+                {/* 🛡️ BANNER DE MESA EDITORIAL & CONTROL ANTI-FAKE NEWS */}
+                <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-amber-300">
+                    <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>
+                      <strong>Control Editorial Obligatorio:</strong> Reporte de exteriores sujeto a evaluación del editor de estudio antes de su difusión pública.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAuditReport(item)}
+                    disabled={auditingId === item.id}
+                    className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${auditingId === item.id ? 'animate-spin text-amber-400' : 'text-amber-400'}`} />
+                    <span>{auditingId === item.id ? 'Auditando...' : '🔍 Auditar Anti-Fake News & Legal'}</span>
+                  </button>
+                </div>
+
+                {/* Resultado de la Auditoría si existe */}
+                {auditResults[item.id] && (
+                  <div className={`mx-6 my-3 p-4 rounded-xl border text-xs space-y-2 ${
+                    auditResults[item.id].verdict === 'APROBADO_CONFIABLE'
+                      ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
+                      : auditResults[item.id].verdict === 'REQUIERE_REVISION'
+                      ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
+                      : 'bg-red-950/30 border-red-500/40 text-red-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold uppercase tracking-wider flex items-center gap-2">
+                        <span>Puntaje de Veracidad: <strong>{auditResults[item.id].veracityScore}/100</strong></span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-black/40 border border-white/10">
+                          {auditResults[item.id].verdict}
+                        </span>
+                      </span>
+                      <span className="text-[10px] text-white/50">Auditoría Nora AI</span>
+                    </div>
+                    <p className="leading-relaxed"><strong>Diagnóstico:</strong> {auditResults[item.id].summary}</p>
+                    {auditResults[item.id].legalNotes && (
+                      <p className="text-white/70"><strong>Resguardo Legal:</strong> {auditResults[item.id].legalNotes}</p>
+                    )}
+                    {auditResults[item.id].detectedRisks?.length > 0 && (
+                      <div className="text-[11px] space-y-0.5">
+                        <strong>Riesgos Detectados:</strong>
+                        <ul className="list-disc pl-4 text-white/70">
+                          {auditResults[item.id].detectedRisks.map((r: string, idx: number) => (
+                            <li key={idx}>{r}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Meta Panel (Top bar) */}
                 <div className="bg-white/5 px-6 py-4 border-b border-white/10 flex flex-wrap justify-between items-center gap-4">
                   <div className="flex flex-wrap items-center gap-6 text-sm">

@@ -500,3 +500,21 @@ export async function archiveStagingItem(id: string, archive: boolean): Promise<
   return true;
 }
 
+
+import { verifyNewsVeracity, FactCheckReport } from "@/modules/nora-pro/fact_checker";
+
+/**
+ * Server action para auditar fake news y contenido inapropiado con Nora
+ */
+export async function auditReportSafety(
+  title: string, 
+  content: string, 
+  corresponsalName?: string
+): Promise<{ success: boolean; report?: FactCheckReport; error?: string }> {
+  try {
+    const report = await verifyNewsVeracity(title, content, corresponsalName);
+    return { success: true, report };
+  } catch (e: any) {
+    return { success: false, error: e?.message || "Error al auditar" };
+  }
+}
