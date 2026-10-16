@@ -1,0 +1,30 @@
+# Dependencias
+/node_modules
+/.pnp
+.pnp.js
+
+# Entornos y claves de seguridad
+.env
+.env*.local
+.env.production
+.env.development
+
+# Compilacion y cache Next.js
+/.next/
+/out/
+/build
+.vercel
+
+# Logs y depuracion
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
