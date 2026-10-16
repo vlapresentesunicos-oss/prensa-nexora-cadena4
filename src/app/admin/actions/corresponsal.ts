@@ -274,7 +274,7 @@ async function dispatchPartnerWebhook(
   queueItemId: string,
   attributionFooter?: string
 ): Promise<{ success: boolean; error?: string }> {
-  const footer = attributionFooter || "Cobertura en exteriores por gentileza de Nexativanews.com.ar";
+  const footer = attributionFooter || "Cobertura en exteriores por gentileza de Prensa NexoraOne • Cadena 4";
   const payload = {
     title: title,
     content: `${content} <br><br> <i>${footer}</i>`,
@@ -370,7 +370,7 @@ export async function approveStagingItem(
   // A) Publish to Prensa NexoraOne • Cadena 4 (public.articles)
   if (actionType === "APPROVE_NEXATIVA_ONLY" || actionType === "APPROVE_ALL_SIMULTANEOUS") {
     if (!stagingItem.version_nexativa) {
-      return { success: false, error: "La Versión Nexativa no está disponible para publicar." };
+      return { success: false, error: "La versión principal de Cadena 4 no está disponible para publicar." };
     }
 
     // Insert as published article
@@ -387,7 +387,7 @@ export async function approveStagingItem(
     ]);
 
     if (insertError) {
-      return { success: false, error: `Error al publicar en Nexativa: ${insertError.message}` };
+      return { success: false, error: "No se pudo publicar la nota en Cadena 4. Inténtalo nuevamente." };
     }
     nexativaPublished = true;
   }
@@ -405,7 +405,7 @@ export async function approveStagingItem(
     const validWebhooks = webhooks.filter(url => url && url.trim() !== "");
 
     if (validWebhooks.length === 0) {
-      const errMsg = "URL de Webhook del socio no configurada en las redes de Nexativa.";
+      const errMsg = "El medio socio todavía no tiene configurado su canal de recepción.";
       await logWebhookFailureAlert(stagingItem.id, "No configurada", errMsg);
       if (actionType === "APPROVE_PARTNER_ONLY") {
         return { success: false, error: errMsg };
@@ -415,7 +415,7 @@ export async function approveStagingItem(
     } else {
       // Parallel execution for all selected partner webhooks
       const dispatchPromises = validWebhooks.map(async (webhookUrl) => {
-        const footer = stagingItem.version_partner!.attribution_footer || "Cobertura en exteriores por gentileza de Nexativanews.com.ar";
+        const footer = stagingItem.version_partner!.attribution_footer || "Cobertura en exteriores por gentileza de Prensa NexoraOne • Cadena 4";
         const dispatchRes = await dispatchPartnerWebhook(
           webhookUrl,
           stagingItem.version_partner!.title,

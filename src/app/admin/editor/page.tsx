@@ -267,7 +267,7 @@ function EditorContent() {
             />
             <MediaUploader
               onUploadSuccess={(url) => setFormData({ ...formData, image_url: url })}
-              label="📷 Subir Imagen a Supabase Storage"
+              label="📷 Subir Imagen"
             />
           </div>
         </div>

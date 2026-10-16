@@ -229,7 +229,7 @@ export default function CorresponsalMovilPage() {
           return publicUrlData.publicUrl;
         }
       } else {
-        console.warn("Supabase client upload notice, using signed upload fallback:", uploadErr.message);
+        console.warn("Aviso de subida, usando método alternativo:", uploadErr.message);
       }
 
       // 2. Fallback: Signed Upload URL API with x-upsert header
@@ -561,7 +561,7 @@ export default function CorresponsalMovilPage() {
       setAttachedImagePreview(null);
       discardVideo();
       discardAudio();
-      setSuccessMsg("🎉 ¡Reporte enviado a la redacción de Nexativa!");
+      setSuccessMsg("🎉 ¡Reporte enviado a la redacción de Cadena 4!");
       
       detectLocation();
     } catch (err: any) {
@@ -965,7 +965,7 @@ export default function CorresponsalMovilPage() {
               <RefreshCw className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                <Send className="w-4 h-4" /> Enviar Reporte a Estudio Nexativa
+                <Send className="w-4 h-4" /> Enviar Reporte al Estudio Cadena 4
               </>
             )}
           </button>

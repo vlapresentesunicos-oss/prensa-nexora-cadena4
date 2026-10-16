@@ -77,10 +77,10 @@ export default function AdminNewsFlashesPage() {
             <Radio className="w-3.5 h-3.5 animate-pulse" /> Panel de Producción & Emisión Noticiosa
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-            Flash de Noticias Nexativa (1 a 5 Minutos)
+            Flash de Noticias Cadena 4 (1 a 5 Minutos)
           </h1>
           <p className="text-gray-400 text-sm max-w-2xl">
-            Noticieros rápidos generados automáticamente por Nora AI. Emitidos con **Nexativa Clean Player** sin barras de 60 minutos ni distracciones.
+            Noticieros rápidos generados automáticamente por Nora AI. Emitidos con **Nexora Clean Player** sin barras de 60 minutos ni distracciones.
           </p>
         </div>
 

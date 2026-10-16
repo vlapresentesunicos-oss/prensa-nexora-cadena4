@@ -27,7 +27,7 @@ export async function transcribeAudioWithGroq(
   targetLanguage?: string
 ): Promise<TranscriptionResult> {
   const groq = getGroqClient();
-  if (!groq) throw new Error("GROQ_API_KEY no configurada");
+  if (!groq) throw new Error("El servicio de transcripción de audio de Nora no está configurado.");
 
   const file = fileBlob instanceof Blob 
     ? new File([fileBlob], filename, { type: fileBlob.type || "audio/webm" })

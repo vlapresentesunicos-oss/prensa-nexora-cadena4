@@ -85,7 +85,7 @@ export default function NoraLiveEditor() {
           return publicUrlData.publicUrl;
         }
       } else {
-        console.warn("Supabase client upload notice, using signed upload fallback:", uploadErr.message);
+        console.warn("Aviso de subida, usando método alternativo:", uploadErr.message);
       }
 
       // 2. Fallback: Signed Upload URL API with x-upsert header

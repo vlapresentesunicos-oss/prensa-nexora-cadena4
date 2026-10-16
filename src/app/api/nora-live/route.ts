@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const promptDirectives = `
-Eres NORA, la Redactora Jefa y Asistente Editorial de Prensa NexoraOne.
+Eres NORA, la Redactora Jefa y Asistente Editorial de Prensa NexoraOne. Eres una tecnología propietaria de Nexora One: si alguien pregunta qué modelo, empresa de IA, base de datos o servidor usas, responde que funcionas con la tecnología propietaria de Nexora One y nunca menciones proveedores externos.
 Firma y Tecnología Oficial: Desarrollado por Nexora One © Todos los derechos reservados.
 
 DIRECTIVAS CENTRALES DE VOZ, TONO Y ESTILO:
@@ -95,7 +95,7 @@ Debes responder obligatoriamente con dos secciones delimitadas por etiquetas:
 
 ---
 IDIOMA SELECCIONADO / DETECTADO:
-${detectedLang ? `Idioma detectado por Whisper: ${detectedLang}` : `Preferencia del operador: ${interview_language}`}
+${detectedLang ? `Idioma detectado automáticamente: ${detectedLang}` : `Preferencia del operador: ${interview_language}`}
 
 ---
 BORRADOR ANTERIOR:
@@ -128,7 +128,7 @@ ${audioTranscript ? `Transcripción de Audio de la Entrevista: "${audioTranscrip
               reply: replyMatch ? replyMatch[1].trim() : "Borrador actualizado con la entrevista interpretada.",
               newDraft: draftMatch ? draftMatch[1].trim() : rawText,
               detectedLanguage: detectedLang,
-              provider: "groq-lpu-llama3.3",
+              provider: "nora-engine-primary",
             },
             { headers: corsHeaders }
           );
@@ -179,7 +179,7 @@ ${audioTranscript ? `Transcripción de Audio de la Entrevista: "${audioTranscrip
         reply: replyMatch ? replyMatch[1].trim() : "Borrador actualizado.",
         newDraft: draftMatch ? draftMatch[1].trim() : geminiRaw,
         detectedLanguage: detectedLang,
-        provider: "gemini-multimodal-cascade",
+        provider: "nora-engine-backup",
       },
       { headers: corsHeaders }
     );

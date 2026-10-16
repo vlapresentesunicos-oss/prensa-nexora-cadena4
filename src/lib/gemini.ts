@@ -26,7 +26,7 @@ export async function generateContentWithGeminiFallback(
 ): Promise<string> {
   const keys = getGeminiCandidateKeys();
   if (keys.length === 0) {
-    throw new Error("No hay claves GEMINI_API_KEY configuradas en el servidor");
+    throw new Error("El motor de IA de Nora no está configurado en el servidor.");
   }
 
   let lastError: any = null;
@@ -57,5 +57,5 @@ export async function generateContentWithGeminiFallback(
     }
   }
 
-  throw lastError || new Error("Todos los intentos con Gemini Multi-Key se agotaron.");
+  throw lastError || new Error("El motor de IA de Nora no está disponible en este momento. Inténtalo en unos minutos.");
 }

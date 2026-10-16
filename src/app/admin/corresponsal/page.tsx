@@ -407,7 +407,7 @@ export default function CorresponsalStagingPage() {
       case "PENDING_REVIEW":
         return <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Pendiente de Revisión</span>;
       case "APPROVED_NEXATIVA_ONLY":
-        return <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Aprobado Nexativa</span>;
+        return <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Aprobado Cadena 4</span>;
       case "APPROVED_PARTNER_ONLY":
         return <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Aprobado Socio</span>;
       case "APPROVED_ALL_SIMULTANEOUS":
@@ -428,17 +428,17 @@ export default function CorresponsalStagingPage() {
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 text-white space-y-4">
           <div className="flex items-center gap-3">
             <AlertTriangle className="text-red-400 w-8 h-8" />
-            <h2 className="text-xl font-bold">Esquema de Base de Datos Pendiente</h2>
+            <h2 className="text-xl font-bold">Módulo Pendiente de Activación</h2>
           </div>
           <p className="text-white/70">
-            Falta crear las tablas de base de datos (`editorial_staging_queue` y `editorial_alerts`) necesarias para almacenar los borradores del corresponsal en staging.
+            El módulo de Corresponsalía todavía no está activado en este servidor.
           </p>
           <div className="bg-black/40 p-4 rounded-lg font-mono text-xs overflow-x-auto border border-white/10 space-y-2">
-            <p className="text-yellow-400 font-bold">// INSTRUCCIONES:</p>
-            <p>1. Copia las sentencias SQL del archivo ubicado en la raíz del proyecto:</p>
-            <p className="text-indigo-400 underline">create_editorial_staging.sql</p>
-            <p>2. Pégalas en el "SQL Editor" de tu consola de administración de Supabase.</p>
-            <p>3. Presiona el botón "Run".</p>
+            <p className="text-yellow-400 font-bold">¿Qué hacer?</p>
+            <p>Contacta a soporte técnico de Nexora One para activar el módulo.</p>
+            
+            
+            <p>Una vez activado, presiona &quot;Reintentar Carga&quot;.</p>
           </div>
           <button 
             onClick={loadPageData} 
@@ -852,11 +852,11 @@ export default function CorresponsalStagingPage() {
                     {isEditing ? (
                       /* Editing Interface */
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-white/[0.02] p-4 rounded-xl border border-white/10">
-                        {/* Edit Nexativa */}
+                        {/* Edit versión principal */}
                         <div className="space-y-4 border-r border-white/5 pr-0 lg:pr-6">
                           <div className="flex items-center gap-2 border-b border-white/5 pb-2">
                             <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-md shadow-blue-500/50" />
-                            <h4 className="font-bold text-sm uppercase text-white/80">Editar Versión Nexativa (Master)</h4>
+                            <h4 className="font-bold text-sm uppercase text-white/80">Editar Versión Cadena 4 (Principal)</h4>
                           </div>
                           
                           <div className="space-y-2">
@@ -1056,7 +1056,7 @@ export default function CorresponsalStagingPage() {
                             }`}
                           >
                             <span className="w-2 h-2 rounded-full bg-blue-400" />
-                            Versión A (Nexativa Master)
+                            Versión A (Cadena 4 Principal)
                           </button>
                           <button
                             onClick={() => setActiveTab(prev => ({ ...prev, [item.id]: 'partner' }))}
@@ -1073,7 +1073,7 @@ export default function CorresponsalStagingPage() {
 
                         <div className="p-6">
                           {activeTab[item.id] === 'nexativa' ? (
-                            /* Nexativa Display */
+                            /* Versión principal */
                             <div className="space-y-4">
                               {item.version_nexativa ? (
                                 <>
@@ -1117,7 +1117,7 @@ export default function CorresponsalStagingPage() {
                                   <div className="bg-white/5 p-4 rounded border border-white/10 text-white/50 text-[11px] leading-relaxed italic flex items-center gap-2">
                                     <Info className="w-4 h-4 text-purple-400 shrink-0" />
                                     <span>
-                                      <strong>Pie de Atribución:</strong> {item.version_partner.attribution_footer || "Cobertura en exteriores por gentileza de Nexativanews.com.ar"}
+                                      <strong>Pie de Atribución:</strong> {item.version_partner.attribution_footer || "Cobertura en exteriores por gentileza de Prensa NexoraOne • Cadena 4"}
                                     </span>
                                   </div>
                                 </>
@@ -1198,7 +1198,7 @@ export default function CorresponsalStagingPage() {
                         disabled={actionLoadingId !== null}
                         className="bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 text-blue-200 px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50"
                       >
-                        Aprobar Nexativa
+                        Aprobar Cadena 4
                       </button>
                       
                       <button

@@ -256,7 +256,7 @@ export default function CleanFlashPlayer({
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
           <span className="text-[11px] font-black text-white uppercase tracking-wider">
-            Nexativa Clean Player
+            Nexora Clean Player
           </span>
           {uniqueSourcesCount > 1 && (
             <span className="text-[10px] bg-purple-600/30 text-purple-300 border border-purple-500/40 px-2 py-0.5 rounded font-bold uppercase flex items-center gap-1">
@@ -299,7 +299,7 @@ export default function CleanFlashPlayer({
             </button>
 
             <div className="pt-2 text-[10px] text-gray-500 border-t border-white/10 w-full max-w-xs text-center font-mono">
-              Desarrollado por <strong>Nexora One</strong> para Nexativa News © Todos los derechos reservados
+              Desarrollado por <strong>Nexora One</strong> para Prensa NexoraOne • Cadena 4 © Todos los derechos reservados
             </div>
           </div>
         )}
@@ -347,7 +347,7 @@ export default function CleanFlashPlayer({
         {/* Footer Credit Signature */}
         <div className="pt-2 text-[10px] text-gray-400 border-t border-white/5 flex items-center justify-between">
           <span>Infraestructura Periodística Digital por <strong>Nexora One</strong></span>
-          <span className="text-red-400 font-bold uppercase font-sans">© Nexativa News</span>
+          <span className="text-red-400 font-bold uppercase font-sans">© Cadena 4</span>
         </div>
       </div>
     </div>

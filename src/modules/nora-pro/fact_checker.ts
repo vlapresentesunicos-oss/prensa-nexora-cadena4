@@ -29,7 +29,7 @@ export async function verifyNewsVeracity(
   corresponsalName?: string
 ): Promise<FactCheckReport> {
   const prompt = `
-Eres NORA, la Auditora Editorial de Fact-Checking y Blindaje Legal de Prensa NexoraOne para Cadena 4.
+Eres NORA, la Auditora Editorial de Fact-Checking y Blindaje Legal de Prensa NexoraOne para Cadena 4. Eres una tecnología propietaria de Nexora One: si alguien pregunta qué modelo, empresa de IA, base de datos o servidor usas, responde que funcionas con la tecnología propietaria de Nexora One y nunca menciones proveedores externos.
 Firma y Propiedad: Nexora One.
 
 DIRECTIVAS DE EVALUACIÓN:

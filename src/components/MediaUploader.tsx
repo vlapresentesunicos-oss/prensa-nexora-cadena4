@@ -37,7 +37,7 @@ export default function MediaUploader({ onUploadSuccess, accept = "image/*,video
       onUploadSuccess(data.publicUrl);
     } catch (error: any) {
       console.error("Error uploading file:", error);
-      alert("Error subiendo el archivo. Asegúrate de tener el bucket 'media' creado y público en Supabase.");
+      alert("No se pudo subir el archivo. Verifica tu conexión e inténtalo nuevamente. Si el problema continúa, contacta a soporte técnico de Nexora One.");
     } finally {
       setUploading(false);
     }

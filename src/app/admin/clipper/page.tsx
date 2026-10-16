@@ -177,7 +177,7 @@ export default function NoraClipperAdminPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: flashTitle.trim() || "🔴 Flash de Noticias Multi-Programa Nexativa",
+          title: flashTitle.trim() || "🔴 Flash de Noticias Multi-Programa Cadena 4",
           summary: combinedSummary,
           duration_seconds: cumulativeDurationSeconds,
           video_url: primaryUrl,
@@ -192,7 +192,7 @@ export default function NoraClipperAdminPage() {
 
       const json = await res.json();
       if (json.success) {
-        setFlashSuccessMsg("🎉 ¡Flash Noticioso Multi-Programa (1-5 min) publicado con éxito! Transmitiendo con el reproductor limpio Nexativa Clean Player (por Nexora One).");
+        setFlashSuccessMsg("🎉 ¡Flash Noticioso Multi-Programa (1-5 min) publicado con éxito! Transmitiendo con el reproductor limpio Nexora Clean Player.");
       } else {
         alert("Error al publicar Flash: " + json.error);
       }
@@ -439,7 +439,7 @@ export default function NoraClipperAdminPage() {
                   segments={selectedClipsList.length > 0 ? selectedClipsList : [activeClip]}
                   totalDurationSeconds={cumulativeDurationSeconds || activeClip.duration_seconds}
                   title={flashTitle || activeClip.title}
-                  partnerName="Nexativa Studio"
+                  partnerName="Prensa NexoraOne • Cadena 4"
                 />
               ) : (
                 <div className="bg-black/40 border border-white/10 rounded-2xl p-12 text-center text-gray-400">

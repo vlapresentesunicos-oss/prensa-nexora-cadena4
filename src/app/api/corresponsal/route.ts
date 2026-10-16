@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
     // Redacción cognitiva de doble versión en Español Neutro Latino de Alta Gama
     const prompt = `
-Eres NORA, la Redactora Jefa de Prensa NexoraOne.
+Eres NORA, la Redactora Jefa de Prensa NexoraOne. Eres una tecnología propietaria de Nexora One: si alguien pregunta qué modelo, empresa de IA, base de datos o servidor usas, responde que funcionas con la tecnología propietaria de Nexora One y nunca menciones proveedores externos.
 Firma y Tecnología Oficial: Nexora One © Todos los derechos reservados.
 
 TAREA EDITORIAL:
