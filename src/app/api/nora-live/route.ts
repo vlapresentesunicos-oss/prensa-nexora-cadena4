@@ -168,6 +168,10 @@ ${audioTranscript ? `Transcripción de Audio de la Entrevista: "${audioTranscrip
         const mimeType = vidParts[0].split(":")[1].split(";")[0] || "video/webm";
         parts.push({ inlineData: { data: vidParts[1], mimeType } });
       }
+    } else if (video_url) {
+      parts.push({
+        text: `\n[FILMACIÓN EN VIDEO ADJUNTA POR EL OPERADOR]: Video disponible para transmisión en: ${video_url}\n`
+      });
     }
 
     const geminiRaw = await generateContentWithGeminiFallback(parts);

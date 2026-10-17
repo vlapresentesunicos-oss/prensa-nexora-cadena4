@@ -7,7 +7,7 @@ export function getGroqClient(): Groq | null {
 }
 
 export const GROQ_MODELS = {
-  text: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+  text: process.env.GROQ_MODEL || "qwen/qwen3.8-27b",
   fast: "llama-3.1-8b-instant",
   whisper: process.env.GROQ_WHISPER_MODEL || "whisper-large-v3"
 };
