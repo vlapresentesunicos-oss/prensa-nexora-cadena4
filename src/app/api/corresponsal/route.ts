@@ -1,3 +1,4 @@
+import { sendPushToAll } from "@/lib/webpush";
 import { NextResponse } from "next/server";
 import { getGroqClient, GROQ_MODELS, transcribeAudioWithGroq } from "@/lib/groq";
 import { generateContentWithGeminiFallback } from "@/lib/gemini";
@@ -169,6 +170,19 @@ FORMATO ESTRICTO DE RESPUESTA JSON (sin markdown ni etiquetas adicionales):
       .select()
       .single();
 
+    
+    // Notificación Push inmediata al móvil del editor
+    try {
+      await sendPushToAll({
+        title: "🎙️ DESPACHO DE EXTERIORES: " + (corresponsalName || "Corresponsal"),
+        body: versionNexativa?.title || draftText.slice(0, 80) || "Nuevo testimonio urgente recibido.",
+        url: "/admin/corresponsal",
+        tag: "corresponsal-dispatch"
+      });
+    } catch (pushErr) {
+      console.warn("[Push Dispatch Warning]:", pushErr);
+    }
+  
     if (dbError) {
       return NextResponse.json({ success: false, error: dbError.message }, { status: 500 });
     }

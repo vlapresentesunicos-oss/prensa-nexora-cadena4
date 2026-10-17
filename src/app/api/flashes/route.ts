@@ -1,3 +1,4 @@
+import { sendPushToAll } from "@/lib/webpush";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -55,6 +56,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
+    
+    // Disparo de alerta push en flashes urgentes
+    try {
+      await sendPushToAll({
+        title: "⚡ FLASH EDITORIAL • ÚLTIMA HORA",
+        body: title || "Flash de noticias de último momento emitido.",
+        url: "/admin/flashes",
+        tag: "flash-breaking"
+      });
+    } catch (e) {}
+  
     return NextResponse.json({ success: true, flash: data });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500 });

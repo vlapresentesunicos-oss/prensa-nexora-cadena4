@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import AdminSidebar from "@/components/Admin/AdminSidebar";
 import InstallAppPrompt from "@/components/InstallAppPrompt";
 import NoraMovilModal from "@/components/Admin/NoraMovilModal";
+import PushNotificationManager from "@/components/Admin/PushNotificationManager";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { 
