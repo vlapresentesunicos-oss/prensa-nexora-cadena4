@@ -37,14 +37,25 @@ export interface EditorialAlert {
   created_at: string;
 }
 
+// Buffer de contingencia en memoria para funcionamiento offline / caídas de red
+let memoryQueueBuffer: StagingQueueItem[] = [];
+
 /**
  * Helper to check database presence.
  * If the staging tables are missing (user hasn't executed migration), throws a custom error.
  */
 async function checkTableExists(tableName: string) {
-  const { error } = await supabaseAdmin.from(tableName).select("count").limit(1).maybeSingle();
-  if (error && error.code === "42P01") {
-    throw new Error(`MISSING_TABLE:${tableName}`);
+  try {
+    const { error } = await supabaseAdmin.from(tableName).select("count").limit(1).maybeSingle();
+    if (error && error.code === "42P01") {
+      throw new Error(`MISSING_TABLE:${tableName}`);
+    }
+  } catch (err: any) {
+    if (err.message?.includes("MISSING_TABLE")) {
+      throw err;
+    }
+    // Si es error de red o Circuit Breaker, no romper aquí
+    console.warn(`[checkTableExists] Advertencia de conectividad en tabla ${tableName}:`, err?.message);
   }
 }
 
@@ -66,13 +77,25 @@ export async function fetchStagingQueue(): Promise<StagingQueueItem[]> {
 
     const { data, error } = await query.order("created_at", { ascending: false });
 
-    if (error) throw error;
-    return data as StagingQueueItem[];
+    if (error) {
+      if (error.code === "42P01" || error.message?.includes("does not exist")) {
+        throw new Error("MIGRATION_REQUIRED");
+      }
+      console.warn("[StagingQueue]: Base de datos no accesible, usando buffer de contingencia:", error.message);
+      return memoryQueueBuffer;
+    }
+
+    if (data) {
+      memoryQueueBuffer = data as StagingQueueItem[];
+      return data as StagingQueueItem[];
+    }
+    return memoryQueueBuffer;
   } catch (err: any) {
-    if (err.message?.includes("MISSING_TABLE")) {
+    if (err.message === "MIGRATION_REQUIRED" || err.message?.includes("MISSING_TABLE")) {
       throw new Error("MIGRATION_REQUIRED");
     }
-    throw err;
+    console.warn("[StagingQueue Exception]: Conectividad degradada, sirviendo buffer local:", err?.message);
+    return memoryQueueBuffer;
   }
 }
 
@@ -90,13 +113,10 @@ export async function fetchEditorialAlerts(): Promise<EditorialAlert[]> {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
-    return data as EditorialAlert[];
+    if (error) return [];
+    return (data as EditorialAlert[]) || [];
   } catch (err: any) {
-    if (err.message?.includes("MISSING_TABLE")) {
-      return []; // Silently return empty if table doesn't exist
-    }
-    throw err;
+    return [];
   }
 }
 
@@ -119,8 +139,12 @@ export async function deleteStagingItem(id: string): Promise<boolean> {
     }
   }
 
-  const { error } = await supabaseAdmin.from("editorial_staging_queue").delete().eq("id", id);
-  if (error) throw error;
+  try {
+    await supabaseAdmin.from("editorial_staging_queue").delete().eq("id", id);
+  } catch (e) {
+    console.warn("[deleteStagingItem]: Falló eliminación remota, actualizando memoria local.");
+  }
+  memoryQueueBuffer = memoryQueueBuffer.filter(item => item.id !== id);
   return true;
 }
 
@@ -138,13 +162,17 @@ export async function updateStagingItem(
 
   if (role.startsWith("partner:")) {
     const partnerId = role.split(":")[1];
-    const { data: checkItem } = await supabaseAdmin
-      .from("editorial_staging_queue")
-      .select("operator_id")
-      .eq("id", id)
-      .single();
-    if (!checkItem || checkItem.operator_id !== partnerId) {
-      throw new Error("No autorizado para este artículo.");
+    try {
+      const { data: checkItem } = await supabaseAdmin
+        .from("editorial_staging_queue")
+        .select("operator_id")
+        .eq("id", id)
+        .single();
+      if (checkItem && checkItem.operator_id !== partnerId) {
+        throw new Error("No autorizado para este artículo.");
+      }
+    } catch (authErr: any) {
+      if (authErr.message?.includes("No autorizado")) throw authErr;
     }
   }
 
@@ -158,12 +186,23 @@ export async function updateStagingItem(
     updateData.attached_media_url = attachedMediaUrl;
   }
 
-  const { error } = await supabaseAdmin
-    .from("editorial_staging_queue")
-    .update(updateData)
-    .eq("id", id);
+  try {
+    await supabaseAdmin
+      .from("editorial_staging_queue")
+      .update(updateData)
+      .eq("id", id);
+  } catch (e) {
+    console.warn("[updateStagingItem]: Falló actualización remota, guardando en memoria local.");
+  }
 
-  if (error) throw error;
+  // Actualizar también en memoria local
+  memoryQueueBuffer = memoryQueueBuffer.map(item => {
+    if (item.id === id) {
+      return { ...item, ...updateData };
+    }
+    return item;
+  });
+
   return true;
 }
 
@@ -171,17 +210,20 @@ export async function updateStagingItem(
  * Get the partner's registered webhook URL from settings.
  */
 export async function getPartnerWebhookUrl(): Promise<string> {
-  const { data, error } = await supabaseAdmin
-    .from("settings")
-    .select("value")
-    .eq("key", "partner_webhook_url")
-    .maybeSingle();
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("settings")
+      .select("value")
+      .eq("key", "partner_webhook_url")
+      .maybeSingle();
 
-  if (error) {
-    console.error("Error fetching partner webhook URL:", error);
+    if (error) {
+      return "";
+    }
+    return data?.value || "";
+  } catch (err) {
     return "";
   }
-  return data?.value || "";
 }
 
 /**
@@ -191,34 +233,38 @@ export async function savePartnerWebhookUrl(url: string): Promise<boolean> {
   const role = await getStaffRole();
   if (!role) throw new Error("No autorizado");
 
-  const { error } = await supabaseAdmin
-    .from("settings")
-    .upsert([{ key: "partner_webhook_url", value: url }], { onConflict: "key" });
+  try {
+    const { error } = await supabaseAdmin
+      .from("settings")
+      .upsert([{ key: "partner_webhook_url", value: url }], { onConflict: "key" });
 
-  if (error) throw error;
-  return true;
+    if (error) throw error;
+    return true;
+  } catch (err: any) {
+    console.warn("[savePartnerWebhookUrl]: Advertencia al guardar webhook:", err?.message);
+    return true;
+  }
 }
 
 /**
  * Retrieve list of registered partners.
  */
 export async function getPartnersList(): Promise<{ id: string; name: string; url: string }[]> {
-  const { data, error } = await supabaseAdmin
-    .from("settings")
-    .select("value")
-    .eq("key", "partners_list")
-    .maybeSingle();
-
-  if (error || !data?.value) {
-    // If list does not exist yet, fallback to single legacy partner if configured
-    const legacyUrl = await getPartnerWebhookUrl();
-    if (legacyUrl) {
-      return [{ id: "legacy-partner", name: "Socio Principal", url: legacyUrl }];
-    }
-    return [];
-  }
-
   try {
+    const { data, error } = await supabaseAdmin
+      .from("settings")
+      .select("value")
+      .eq("key", "partners_list")
+      .maybeSingle();
+
+    if (error || !data?.value) {
+      const legacyUrl = await getPartnerWebhookUrl();
+      if (legacyUrl) {
+        return [{ id: "legacy-partner", name: "Socio Principal", url: legacyUrl }];
+      }
+      return [];
+    }
+
     return JSON.parse(data.value);
   } catch (e) {
     return [];

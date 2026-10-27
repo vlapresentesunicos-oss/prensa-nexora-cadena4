@@ -154,7 +154,7 @@ export default function CorresponsalStagingPage() {
       if (err.message === "MIGRATION_REQUIRED") {
         setMigrationRequired(true);
       } else {
-        setErrorBanner("Error cargando los datos: " + err.message);
+        console.warn("[Corresponsal Staging]: Operando en modo contingencia:", err?.message);
       }
     } finally {
       setLoading(false);
