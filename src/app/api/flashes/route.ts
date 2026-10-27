@@ -4,10 +4,27 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
+let flashesCache: { [key: string]: { data: any; expiresAt: number } } = {};
+const FLASHES_CACHE_TTL_MS = 15 * 1000;
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const cacheKey = `limit_${limit}`;
+
+    const now = Date.now();
+    if (flashesCache[cacheKey] && flashesCache[cacheKey].expiresAt > now) {
+      return NextResponse.json(
+        { success: true, flashes: flashesCache[cacheKey].data, cached: true },
+        {
+          headers: {
+            "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30",
+            "X-Cache": "HIT",
+          },
+        }
+      );
+    }
 
     const { data: flashes, error } = await supabaseAdmin
       .from("news_flashes")
@@ -16,12 +33,31 @@ export async function GET(req: Request) {
       .limit(limit);
 
     if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.warn("[Flashes API Fallback]:", error.message);
+      return NextResponse.json(
+        { success: true, flashes: [], degradedMode: true, message: "Modo contingencia activo" },
+        { headers: { "X-Degraded-Mode": "true" } }
+      );
     }
 
-    return NextResponse.json({ success: true, flashes: flashes || [] });
+    const result = flashes || [];
+    flashesCache[cacheKey] = { data: result, expiresAt: now + FLASHES_CACHE_TTL_MS };
+
+    return NextResponse.json(
+      { success: true, flashes: result, cached: false },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=15, stale-while-revalidate=30",
+          "X-Cache": "MISS",
+        },
+      }
+    );
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500 });
+    console.warn("[Flashes API Catch Fallback]:", err?.message);
+    return NextResponse.json(
+      { success: true, flashes: [], degradedMode: true, message: "Modo contingencia activo" },
+      { headers: { "X-Degraded-Mode": "true" } }
+    );
   }
 }
 
@@ -56,7 +92,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    
+    // Invalidar caché de lectura
+    flashesCache = {};
+
     // Disparo de alerta push en flashes urgentes
     try {
       await sendPushToAll({

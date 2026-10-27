@@ -7,7 +7,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:stress": "node scripts/stress-test.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

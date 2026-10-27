@@ -18,95 +18,99 @@ export async function POST(req: Request) {
 
     const results: Record<string, any> = {};
 
-    // 1. Despacho a WordPress (Portal Oficial de Cadena 4)
-    try {
-      const wpRes = await publishToWordPress({
+    // Despacho Concurrente en Paralelo (Elimina cuello de botella secuencial)
+    const captionToSend = socialCaption || `📢 ${title}\n\n${excerpt}\n\n#Noticias #Actualidad #Cadena4`;
+    const webhookUrl = process.env.MAKE_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://cadena4.com.ar";
+
+    const [wpSettled, igSettled, fbSettled, tgSettled, whSettled] = await Promise.allSettled([
+      // 1. WordPress
+      publishToWordPress({
         title,
         content,
         excerpt,
         imageUrl,
         status: "publish",
-      });
-      results.wordpress = wpRes;
-
-      if (wpRes.success && articleId) {
-        await supabaseAdmin
-          .from("articles")
-          .update({ wp_post_id: String(wpRes.postId) })
-          .eq("id", articleId);
-      }
-    } catch (wpErr: any) {
-      results.wordpress = { success: false, error: wpErr?.message || String(wpErr) };
-    }
-
-    // 2. Despacho a Redes Sociales (Meta: Instagram & Facebook)
-    const captionToSend = socialCaption || `📢 ${title}\n\n${excerpt}\n\n#Noticias #Actualidad #Cadena4`;
-
-    if (imageUrl) {
-      try {
-        const igRes = await publishToInstagram({ caption: captionToSend, imageUrl });
-        results.instagram = igRes;
-      } catch (igErr: any) {
-        results.instagram = { success: false, error: igErr?.message };
-      }
-    }
-
-    try {
-      const fbRes = await publishToFacebookPage({ caption: captionToSend, imageUrl: imageUrl || undefined });
-      results.facebook = fbRes;
-    } catch (fbErr: any) {
-      results.facebook = { success: false, error: fbErr?.message };
-    }
-
-    // 3. Despacho a Telegram Channel
-    try {
-      const tgRes = await broadcastToTelegram({
+      }),
+      // 2. Instagram
+      imageUrl ? publishToInstagram({ caption: captionToSend, imageUrl }) : Promise.resolve(null),
+      // 3. Facebook
+      publishToFacebookPage({ caption: captionToSend, imageUrl: imageUrl || undefined }),
+      // 4. Telegram
+      broadcastToTelegram({
         title,
         excerpt,
-        url: results.wordpress?.permalink || process.env.NEXT_PUBLIC_SITE_URL || "https://cadena4.com.ar",
+        url: siteUrl,
         imageUrl,
-      });
-      results.telegram = tgRes;
-    } catch (tgErr: any) {
-      results.telegram = { success: false, error: tgErr?.message };
+      }),
+      // 5. Webhook externo
+      webhookUrl
+        ? dispatchWebhookWithRetry(webhookUrl, {
+            event: "article.published",
+            timestamp: new Date().toISOString(),
+            data: {
+              articleId,
+              title,
+              excerpt,
+              content,
+              imageUrl,
+              socialCaption: captionToSend,
+            },
+          })
+        : Promise.resolve(null),
+    ]);
+
+    // Consolidar resultados de forma resiliente
+    if (wpSettled.status === "fulfilled") {
+      results.wordpress = wpSettled.value;
+    } else {
+      results.wordpress = { success: false, error: wpSettled.reason?.message || String(wpSettled.reason) };
     }
 
-    // 4. Despacho a Webhook Externo (Make.com / n8n si estan configurados)
-    const webhookUrl = process.env.MAKE_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
-    if (webhookUrl) {
-      try {
-        const whRes = await dispatchWebhookWithRetry(webhookUrl, {
-          event: "article.published",
-          timestamp: new Date().toISOString(),
-          data: {
-            articleId,
-            title,
-            excerpt,
-            content,
-            imageUrl,
-            wordpressUrl: results.wordpress?.permalink,
-            socialCaption: captionToSend,
-          },
-        });
-        results.webhook = whRes;
-      } catch (whErr: any) {
-        results.webhook = { success: false, error: whErr?.message };
+    if (imageUrl) {
+      if (igSettled.status === "fulfilled" && igSettled.value) {
+        results.instagram = igSettled.value;
+      } else if (igSettled.status === "rejected") {
+        results.instagram = { success: false, error: igSettled.reason?.message || String(igSettled.reason) };
       }
     }
 
-    // 5. Marcar como publicado en Supabase
+    if (fbSettled.status === "fulfilled") {
+      results.facebook = fbSettled.value;
+    } else {
+      results.facebook = { success: false, error: fbSettled.reason?.message || String(fbSettled.reason) };
+    }
+
+    if (tgSettled.status === "fulfilled") {
+      results.telegram = tgSettled.value;
+    } else {
+      results.telegram = { success: false, error: tgSettled.reason?.message || String(tgSettled.reason) };
+    }
+
+    if (webhookUrl && whSettled.status === "fulfilled" && whSettled.value) {
+      results.webhook = whSettled.value;
+    } else if (webhookUrl && whSettled.status === "rejected") {
+      results.webhook = { success: false, error: whSettled.reason?.message || String(whSettled.reason) };
+    }
+
+    // Actualización y log en Supabase
     if (articleId) {
-      await supabaseAdmin.from("articles").update({ social_published: true }).eq("id", articleId);
-      
-      // Registrar log de auditoria
-      await supabaseAdmin.from("distribution_logs").insert([
-        {
-          article_id: articleId,
-          channel_type: "omnichannel_dispatch",
-          status: results.wordpress?.success ? "success" : "failed",
-          payload: { title, channels: Object.keys(results) },
-          response: JSON.stringify(results),
-        },
+      const updatePayload: Record<string, any> = { social_published: true };
+      if (results.wordpress?.success && results.wordpress?.postId) {
+        updatePayload.wp_post_id = String(results.wordpress.postId);
+      }
+
+      await Promise.allSettled([
+        supabaseAdmin.from("articles").update(updatePayload).eq("id", articleId),
+        supabaseAdmin.from("distribution_logs").insert([
+          {
+            article_id: articleId,
+            channel_type: "omnichannel_dispatch",
+            status: results.wordpress?.success ? "success" : "partial",
+            payload: { title, channels: Object.keys(results) },
+            response: JSON.stringify(results),
+          },
+        ]),
       ]);
     }
 

@@ -8,6 +8,16 @@ import { getDynamicEditorialContext } from "@/lib/memory";
 
 export const maxDuration = 60;
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -171,31 +181,32 @@ FORMATO ESTRICTO DE RESPUESTA JSON (sin markdown ni etiquetas adicionales):
       .single();
 
     
-    // Notificación Push inmediata al móvil del editor
-    try {
-      await sendPushToAll({
-        title: "🎙️ DESPACHO DE EXTERIORES: " + (corresponsalName || "Corresponsal"),
-        body: versionNexativa?.title || draftText.slice(0, 80) || "Nuevo testimonio urgente recibido.",
-        url: "/admin/corresponsal",
-        tag: "corresponsal-dispatch"
-      });
-    } catch (pushErr) {
+    // Notificación Push asíncrona en segundo plano (no bloquea la respuesta al corresponsal)
+    sendPushToAll({
+      title: "🎙️ DESPACHO DE EXTERIORES: " + (corresponsalName || "Corresponsal"),
+      body: versionNexativa?.title || draftText.slice(0, 80) || "Nuevo testimonio urgente recibido.",
+      url: "/admin/corresponsal",
+      tag: "corresponsal-dispatch",
+    }).catch((pushErr) => {
       console.warn("[Push Dispatch Warning]:", pushErr);
-    }
-  
+    });
+
     if (dbError) {
-      return NextResponse.json({ success: false, error: dbError.message }, { status: 500 });
+      return NextResponse.json({ success: false, error: dbError.message }, { status: 500, headers: corsHeaders });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Reporte recibido y procesado en cola de staging",
-      id: inserted.id,
-      item: inserted,
-      detectedLanguage: detectedAudioLang
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Reporte recibido y procesado en cola de staging",
+        id: inserted.id,
+        item: inserted,
+        detectedLanguage: detectedAudioLang,
+      },
+      { headers: corsHeaders }
+    );
   } catch (err: any) {
     console.error("[Corresponsal Route Error]:", err);
-    return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500 });
+    return NextResponse.json({ success: false, error: err?.message || String(err) }, { status: 500, headers: corsHeaders });
   }
 }

@@ -103,28 +103,32 @@ export async function sendPushToAll(payload: PushNotificationPayload) {
 
   let sentCount = 0;
   const expiredEndpoints: string[] = [];
+  const BATCH_SIZE = 25;
 
-  const promises = subscriptions.map(async (sub) => {
-    try {
-      await webpush.sendNotification(sub, jsonPayload);
-      sentCount++;
-    } catch (err: any) {
-      if (err?.statusCode === 410 || err?.statusCode === 404) {
-        // Suscripción expirada o revocada por el navegador
-        expiredEndpoints.push(sub.endpoint);
-      } else {
-        console.warn("[WebPush Send Warning]:", err?.message || err);
+  for (let i = 0; i < subscriptions.length; i += BATCH_SIZE) {
+    const chunk = subscriptions.slice(i, i + BATCH_SIZE);
+    const chunkPromises = chunk.map(async (sub) => {
+      try {
+        await webpush.sendNotification(sub, jsonPayload);
+        sentCount++;
+      } catch (err: any) {
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
+          expiredEndpoints.push(sub.endpoint);
+        } else {
+          console.warn("[WebPush Send Warning]:", err?.message || err);
+        }
       }
+    });
+    await Promise.allSettled(chunkPromises);
+  }
+
+  // Limpiar suscripciones expiradas en un solo lote eficiente
+  if (expiredEndpoints.length > 0) {
+    for (const ep of expiredEndpoints) {
+      memorySubscriptions.delete(ep);
     }
-  });
-
-  await Promise.allSettled(promises);
-
-  // Limpiar suscripciones expiradas
-  for (const ep of expiredEndpoints) {
-    memorySubscriptions.delete(ep);
     try {
-      await supabaseAdmin.from("prensa_push_subscriptions").delete().eq("endpoint", ep);
+      await supabaseAdmin.from("prensa_push_subscriptions").delete().in("endpoint", expiredEndpoints);
     } catch (e) {}
   }
 

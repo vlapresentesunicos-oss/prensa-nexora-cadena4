@@ -20,20 +20,46 @@ export interface NoraSessionMessage {
   metadata?: any;
 }
 
+let mongoCircuitOpenUntil = 0;
+let mongoFailures = 0;
+const MONGO_CIRCUIT_COOLDOWN_MS = 15000;
+
 export async function getMongoDb(): Promise<Db | null> {
   if (!uri) {
     return null;
   }
 
+  const now = Date.now();
+  if (now < mongoCircuitOpenUntil) {
+    return null; // Circuito abierto: respuesta instantánea (0ms) sin bloquear el hilo
+  }
+
   try {
     if (!clientPromise) {
-      client = new MongoClient(uri);
-      clientPromise = client.connect();
+      client = new MongoClient(uri, {
+        maxPoolSize: 20,
+        minPoolSize: 1,
+        serverSelectionTimeoutMS: 2500,
+        connectTimeoutMS: 2500,
+        socketTimeoutMS: 5000,
+      });
+      clientPromise = client.connect().catch((connectErr) => {
+        clientPromise = null;
+        client = null;
+        throw connectErr;
+      });
     }
     const connectedClient = await clientPromise;
+    mongoFailures = 0;
     return connectedClient.db();
   } catch (error) {
-    console.warn("[MongoDB Atlas Fail-Safe] Error conectando a MongoDB:", error);
+    mongoFailures++;
+    if (mongoFailures >= 2) {
+      mongoCircuitOpenUntil = Date.now() + MONGO_CIRCUIT_COOLDOWN_MS;
+      console.warn(`[MongoDB Circuit Breaker] Circuito ABIERTO por ${MONGO_CIRCUIT_COOLDOWN_MS / 1000}s ante indisponibilidad de Atlas.`);
+    }
+    clientPromise = null;
+    client = null;
     return null;
   }
 }

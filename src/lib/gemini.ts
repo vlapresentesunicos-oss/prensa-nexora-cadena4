@@ -11,12 +11,14 @@ export function getGeminiCandidateKeys(): string[] {
   );
 }
 
-export const GEMINI_CANDIDATE_MODELS = [
-  process.env.GEMINI_MODEL || "gemini-3.8-flash",
-  "gemini-3.8-flash",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash"
-];
+export const GEMINI_CANDIDATE_MODELS = Array.from(
+  new Set([
+    process.env.GEMINI_MODEL || "gemini-3.8-flash",
+    "gemini-3.8-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+  ].filter(Boolean) as string[])
+);
 
 export async function generateContentWithGeminiFallback(
   parts: any[],
@@ -28,9 +30,12 @@ export async function generateContentWithGeminiFallback(
   }
 
   let lastError: any = null;
+  const invalidKeys = new Set<string>();
 
   for (const modelName of GEMINI_CANDIDATE_MODELS) {
     for (const key of keys) {
+      if (invalidKeys.has(key)) continue;
+
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
           const genAI = new GoogleGenerativeAI(key);
@@ -46,9 +51,17 @@ export async function generateContentWithGeminiFallback(
           }
         } catch (err: any) {
           lastError = err;
-          console.warn(`[Gemini Fallback] Modelo ${modelName} falló con llave (intento ${attempt}):`, err?.message || err);
-          if (attempt < 2 && (err?.message?.includes("429") || err?.message?.includes("503"))) {
-            await new Promise((res) => setTimeout(res, 600));
+          const msg = err?.message || String(err);
+          console.warn(`[Gemini Fallback] Modelo ${modelName} falló con llave (intento ${attempt}):`, msg);
+
+          // Si la API key es inválida, no seguir probando esa clave con otros modelos
+          if (msg.includes("API_KEY_INVALID") || msg.includes("API key not valid") || msg.includes("403")) {
+            invalidKeys.add(key);
+            break;
+          }
+
+          if (attempt < 2 && (msg.includes("429") || msg.includes("503"))) {
+            await new Promise((res) => setTimeout(res, 400));
           }
         }
       }
